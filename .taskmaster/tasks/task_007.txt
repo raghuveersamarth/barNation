@@ -1,0 +1,52 @@
+# Task ID: 7
+# Title: Implement Client Feature: Upload Videos (Compressed) and Add Notes
+# Status: pending
+# Dependencies: 6
+# Priority: medium
+# Description: Enable clients to upload form-check videos (compressed before upload) and add workout notes.
+# Details:
+1. Integrate a video compression library (e.g., `react-native-video-processing`) to compress videos before upload.
+2. Implement a video upload component using Supabase Storage or a third-party service like Cloudinary.
+3. Add a text input field for clients to add workout notes.
+4. Save the compressed video URL and notes to Supabase.
+
+# Test Strategy:
+Test video upload with different video sizes and formats. Verify that the video is compressed before upload and that the compressed video is playable. Confirm that the video URL and notes are saved correctly in the database.
+
+# Subtasks:
+## 1. Integrate Video Compression Library [pending]
+### Dependencies: None
+### Description: Integrate a video compression library (e.g., `react-native-video-processing`) into the client application.
+### Details:
+Research and select a suitable video compression library. Install and configure the library within the React Native project. Implement the necessary code to compress videos before upload.
+
+## 2. Implement Video Upload Component [pending]
+### Dependencies: 7.1
+### Description: Implement a video upload component using Supabase Storage or a third-party service like Cloudinary.
+### Details:
+Create a UI component that allows users to select and upload videos. Integrate with Supabase Storage or Cloudinary to handle the video upload process. Configure the component to handle compressed video files.
+
+## 3. Add Workout Notes Input Field [pending]
+### Dependencies: None
+### Description: Add a text input field for clients to add workout notes related to the video.
+### Details:
+Create a text input field in the UI where clients can enter workout notes. Ensure the input field is properly styled and integrated with the video upload component.
+
+## 4. Save Video URL and Notes to Supabase [pending]
+### Dependencies: 7.2, 7.3
+### Description: Save the compressed video URL and workout notes to the Supabase database.
+### Details:
+Implement the logic to save the compressed video URL (obtained from Supabase Storage or Cloudinary) and the workout notes to the appropriate table in the Supabase database. Associate the data with the user and workout session.
+
+## 5. Implement Upload Progress Handling [pending]
+### Dependencies: 7.2
+### Description: Implement visual feedback to show the upload progress to the user.
+### Details:
+Add a progress bar or other visual indicator to show the upload progress to the user. Update the progress indicator in real-time as the video is being uploaded.
+
+## 6. Implement Error Handling for Uploads [pending]
+### Dependencies: 7.1, 7.2
+### Description: Implement error handling to manage potential errors during video compression and upload.
+### Details:
+Implement error handling to catch and display errors that may occur during video compression or upload. Provide informative error messages to the user and allow them to retry the upload.
+

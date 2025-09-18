@@ -1,0 +1,45 @@
+# Task ID: 6
+# Title: Implement Client Feature: Log Exercises (Sets/Reps/Weights) and Mark Workout Complete
+# Status: pending
+# Dependencies: 5
+# Priority: high
+# Description: Enable clients to log sets, reps, and weights for each exercise and mark the workout as complete.
+# Details:
+1. Create input fields for clients to enter sets, reps, and weights for each exercise.
+2. Implement a function to save the logged data to Supabase.
+3. Add a 'Mark Workout Complete' button that updates the workout status in the database.
+
+# Test Strategy:
+Test logging exercise data with valid and invalid inputs. Verify that the data is saved correctly in the database. Confirm that marking the workout as complete updates the workout status.
+
+# Subtasks:
+## 1. Create Input Fields for Sets, Reps, and Weights [pending]
+### Dependencies: None
+### Description: Develop UI components for clients to input sets, reps, and weights for each exercise within a workout.
+### Details:
+Design and implement input fields (e.g., number inputs) for sets, reps, and weights. Ensure the UI is intuitive and easy to use on mobile devices.
+
+## 2. Implement Data Saving to Supabase [pending]
+### Dependencies: 6.1
+### Description: Implement a function to save the logged sets, reps, and weights data to the Supabase database.
+### Details:
+Create a database schema to store the exercise data. Implement API calls to Supabase to save the data when the user logs their workout information.
+
+## 3. Add 'Mark Workout Complete' Button [pending]
+### Dependencies: 6.2
+### Description: Implement a button that allows clients to mark a workout as complete, updating the workout status in the database.
+### Details:
+Add a button to the UI labeled 'Mark Workout Complete'. Implement a function that updates the workout status in the Supabase database when the button is pressed.
+
+## 4. Implement Data Validation [pending]
+### Dependencies: 6.1
+### Description: Implement data validation to ensure that the input values for sets, reps, and weights are valid numbers.
+### Details:
+Add validation logic to check if the input values are numbers and within reasonable ranges. Display error messages to the user if the input is invalid.
+
+## 5. Provide User Feedback [pending]
+### Dependencies: 6.2, 6.3
+### Description: Provide visual feedback to the user after saving the workout data or marking the workout as complete.
+### Details:
+Display a success message or a loading indicator while saving the data. Provide feedback to the user to confirm that the workout has been successfully marked as complete.
+

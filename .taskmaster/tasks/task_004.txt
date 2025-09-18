@@ -1,0 +1,45 @@
+# Task ID: 4
+# Title: Implement Coach Feature: Add Clients via Email Invite
+# Status: pending
+# Dependencies: 2, 3
+# Priority: medium
+# Description: Enable coaches to add clients by sending email invites.
+# Details:
+1. Create an input field for the coach to enter the client's email address.
+2. Implement a function to send an email invite to the client using Supabase's `auth.inviteUserByEmail` or a custom email service.
+3. Store the invite status in a separate table (e.g., `invites`) to track pending invites.
+
+# Test Strategy:
+Test sending email invites to different email addresses. Verify that the invite is successfully sent and that the invite status is updated in the database. Confirm that the invited user can sign up and is associated with the coach.
+
+# Subtasks:
+## 1. Create Email Input Field [pending]
+### Dependencies: None
+### Description: Implement an input field on the coach dashboard for entering the client's email address.
+### Details:
+The input field should have appropriate validation to ensure the entered value is a valid email address.
+
+## 2. Implement Email Sending Function [pending]
+### Dependencies: None
+### Description: Develop a function to send an email invite to the client using Supabase's `auth.inviteUserByEmail` or a custom email service.
+### Details:
+This function should take the email address as input and send a personalized invitation email. Configure email templates and subject lines.
+
+## 3. Store Invite Status [pending]
+### Dependencies: None
+### Description: Create a table (e.g., `invites`) in Supabase to store the status of each email invite.
+### Details:
+The table should include fields like invite ID, coach ID, client email, invite status (pending, accepted, expired), and timestamp.
+
+## 4. Handle Errors and Provide Feedback [pending]
+### Dependencies: 4.2
+### Description: Implement error handling for email sending failures and provide feedback to the coach.
+### Details:
+Handle cases where the email address is invalid, the email sending fails, or the user is already registered. Display appropriate error messages to the coach.
+
+## 5. Test Email Invite Flow [pending]
+### Dependencies: 4.1, 4.2, 4.3, 4.4
+### Description: Test the entire email invite flow from entering the email address to the client accepting the invite and being associated with the coach.
+### Details:
+Verify that the email is sent successfully, the invite status is updated correctly, and the client can sign up and is associated with the coach.
+

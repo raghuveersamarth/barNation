@@ -1,0 +1,93 @@
+{
+	"meta": {
+		"generatedAt": "2025-09-09T09:09:17.504Z",
+		"tasksAnalyzed": 10,
+		"totalTasks": 10,
+		"analysisCount": 10,
+		"thresholdScore": 6,
+		"projectName": "Taskmaster",
+		"usedResearch": false
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 1,
+			"taskTitle": "Set up React Native (Expo) project with Supabase",
+			"complexityScore": 5,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Break down the setup process into smaller, more manageable tasks. Consider separating Expo project initialization, Supabase client library installation, Supabase client configuration, and project structure setup into individual subtasks.",
+			"reasoning": "While the steps are clearly defined, setting up a project and configuring a backend involves multiple tools and configurations, making it moderately complex."
+		},
+		{
+			"taskId": 2,
+			"taskTitle": "Implement User Authentication with Email/Password and Role Selection",
+			"complexityScore": 7,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Decompose the authentication implementation into subtasks for UI design (signup/login screens), Supabase Auth integration, role selection implementation, storing the selected role, and profile setup.",
+			"reasoning": "Implementing authentication with role selection and profile setup requires handling UI, backend logic, and database interactions, increasing its complexity."
+		},
+		{
+			"taskId": 3,
+			"taskTitle": "Build Coach Dashboard with Client List",
+			"complexityScore": 6,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Divide the dashboard development into fetching client data, designing the UI layout, implementing the avatar component, and implementing the completion percentage and last activity components.",
+			"reasoning": "Fetching and displaying data in a visually appealing format involves UI design and data handling, making it moderately complex."
+		},
+		{
+			"taskId": 4,
+			"taskTitle": "Implement Coach Feature: Add Clients via Email Invite",
+			"complexityScore": 7,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Break down the email invite feature into subtasks for creating the email input field, implementing the email sending function, storing invite status, handling potential errors, and testing the entire flow.",
+			"reasoning": "Sending email invites and managing invite statuses involves backend logic, email service integration, and error handling, increasing its complexity."
+		},
+		{
+			"taskId": 5,
+			"taskTitle": "Build Client Daily Dashboard with Today's Workout",
+			"complexityScore": 6,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Separate the dashboard development into fetching workout data, displaying workout exercises, implementing set/rep/weight display, and handling cases where no workout is assigned.",
+			"reasoning": "Fetching and displaying workout data requires data handling and UI design, making it moderately complex."
+		},
+		{
+			"taskId": 6,
+			"taskTitle": "Implement Client Feature: Log Exercises (Sets/Reps/Weights) and Mark Workout Complete",
+			"complexityScore": 7,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Decompose the logging feature into subtasks for creating input fields, implementing data saving, implementing the 'Mark Workout Complete' button, handling data validation, and providing user feedback.",
+			"reasoning": "Logging exercise data and marking workouts complete involves UI, backend logic, data validation, and database updates, increasing its complexity."
+		},
+		{
+			"taskId": 7,
+			"taskTitle": "Implement Client Feature: Upload Videos (Compressed) and Add Notes",
+			"complexityScore": 8,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Break down the video upload feature into subtasks for integrating the video compression library, implementing the video upload component, adding the notes input field, saving data to Supabase, handling upload progress, and managing potential errors.",
+			"reasoning": "Video compression, upload, and storage involve integrating external libraries, handling large files, and managing potential errors, making it complex."
+		},
+		{
+			"taskId": 8,
+			"taskTitle": "Implement Basic Progress Charts (Line, Bar, Ring)",
+			"complexityScore": 7,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Divide the chart implementation into subtasks for integrating the charting library, fetching data for each chart type, creating the Line Chart component, creating the Bar Chart component, and creating the Ring Chart component.",
+			"reasoning": "Integrating a charting library and fetching data for different chart types requires data handling and UI design, making it moderately complex."
+		},
+		{
+			"taskId": 9,
+			"taskTitle": "Integrate Stripe for Subscription Payments (Starter/Pro/Elite)",
+			"complexityScore": 9,
+			"recommendedSubtasks": 7,
+			"expansionPrompt": "Decompose the Stripe integration into subtasks for installing the Stripe SDK, creating backend checkout sessions, implementing the checkout flow, handling Stripe webhooks, updating subscription status in Supabase, testing different payment methods, and handling errors.",
+			"reasoning": "Integrating Stripe involves handling payments, webhooks, and backend logic, making it highly complex."
+		},
+		{
+			"taskId": 10,
+			"taskTitle": "Implement Subscription Tier Logic and Feature Gating",
+			"complexityScore": 7,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Break down the feature gating implementation into subtasks for fetching the user's subscription tier, implementing conditional rendering, implementing feature disabling, testing with different tiers, and handling edge cases.",
+			"reasoning": "Implementing feature gating based on subscription tiers requires conditional logic and UI updates, making it moderately complex."
+		}
+	]
+}

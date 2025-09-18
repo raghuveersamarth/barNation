@@ -1,0 +1,39 @@
+# Task ID: 3
+# Title: Build Coach Dashboard with Client List
+# Status: pending
+# Dependencies: 2
+# Priority: medium
+# Description: Develop the coach dashboard displaying a list of clients with their avatar, completion percentage, and last activity.
+# Details:
+1. Fetch client data from Supabase, including avatar, completion percentage, and last activity.
+2. Display the client list in a visually appealing format (e.g., using `FlatList` or `ScrollView`).
+3. Implement UI components for displaying avatar, completion percentage (using a progress bar), and last activity (formatted date).
+
+# Test Strategy:
+Verify that the client list is displayed correctly with accurate data. Test with different numbers of clients. Ensure the UI is responsive and visually appealing.
+
+# Subtasks:
+## 1. Fetch Client Data [pending]
+### Dependencies: None
+### Description: Fetch client data from Supabase, including avatar URL, completion percentage, and last activity date.
+### Details:
+Use Supabase client library to query the database and retrieve the required client information. Handle potential errors during data fetching.
+
+## 2. Design Client List UI Layout [pending]
+### Dependencies: None
+### Description: Design the UI layout for displaying the client list, considering visual appeal and responsiveness.
+### Details:
+Choose appropriate UI components (e.g., `FlatList` or `ScrollView`) for displaying the list. Define the layout structure and styling for each client item.
+
+## 3. Implement Avatar Component [pending]
+### Dependencies: None
+### Description: Implement a reusable UI component for displaying the client's avatar.
+### Details:
+Create a component that accepts the avatar URL as a prop and displays the image. Handle cases where the avatar URL is missing or invalid.
+
+## 4. Implement Completion Percentage and Last Activity Components [pending]
+### Dependencies: None
+### Description: Implement UI components for displaying the client's completion percentage (using a progress bar) and last activity (formatted date).
+### Details:
+Create a progress bar component that accepts the completion percentage as a prop. Implement a function to format the last activity date into a user-friendly string.
+

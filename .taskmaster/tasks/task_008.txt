@@ -1,0 +1,45 @@
+# Task ID: 8
+# Title: Implement Basic Progress Charts (Line, Bar, Ring)
+# Status: pending
+# Dependencies: 6
+# Priority: medium
+# Description: Develop basic progress charts (Line Chart for lift progression, Bar Chart for weekly training volume, Ring Chart for monthly completion rate).
+# Details:
+1. Integrate a charting library (e.g., `react-native-chart-kit`).
+2. Fetch data from Supabase for lift progression, weekly training volume, and monthly completion rate.
+3. Create Line Chart, Bar Chart, and Ring Chart components using the charting library and display the data.
+
+# Test Strategy:
+Verify that the charts are displayed correctly with accurate data. Test with different data sets and ensure the charts are responsive and visually appealing.
+
+# Subtasks:
+## 1. Integrate Charting Library [pending]
+### Dependencies: None
+### Description: Integrate a charting library (e.g., `react-native-chart-kit`) into the project.
+### Details:
+Install and configure the chosen charting library. Ensure it is properly linked and accessible within the project.
+
+## 2. Fetch Data for Line Chart [pending]
+### Dependencies: None
+### Description: Fetch data from Supabase for lift progression to be displayed in the Line Chart.
+### Details:
+Implement a function to query Supabase and retrieve the necessary data for lift progression. Handle data transformation if required.
+
+## 3. Create Line Chart Component [pending]
+### Dependencies: 8.1, 8.2
+### Description: Create a Line Chart component using the charting library and display the lift progression data.
+### Details:
+Develop a React Native component that utilizes the charting library to render a Line Chart. Pass the fetched lift progression data to the component.
+
+## 4. Create Bar Chart Component [pending]
+### Dependencies: 8.1
+### Description: Create a Bar Chart component to display weekly training volume data.
+### Details:
+Fetch weekly training volume data from Supabase and create a Bar Chart component using the charting library to display the data.
+
+## 5. Create Ring Chart Component [pending]
+### Dependencies: 8.1
+### Description: Create a Ring Chart component to display monthly completion rate data.
+### Details:
+Fetch monthly completion rate data from Supabase and create a Ring Chart component using the charting library to display the data.
+

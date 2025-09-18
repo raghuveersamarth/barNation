@@ -1,0 +1,47 @@
+# Task ID: 2
+# Title: Implement User Authentication with Email/Password and Role Selection
+# Status: pending
+# Dependencies: 1
+# Priority: high
+# Description: Implement email/password authentication using Supabase Auth and add role selection (Coach/Client) during signup.
+# Details:
+1. Create signup and login screens with email and password fields.
+2. Use Supabase Auth's `signUp` and `signInWithPassword` methods for authentication.
+3. Add a role selection component (e.g., radio buttons) during signup.
+4. Store the selected role in the Supabase `users` table.
+5. Implement basic profile setup (Name, Age, Gender, Picture) and store the data in the `users` table.
+
+# Test Strategy:
+Test user registration and login with valid and invalid credentials. Verify that the user role is correctly stored in the database. Confirm that profile data is saved correctly.
+
+# Subtasks:
+## 1. Design Signup and Login Screens [pending]
+### Dependencies: None
+### Description: Create the UI for signup and login screens, including email and password input fields.
+### Details:
+Design visually appealing and user-friendly signup and login screens.
+
+## 2. Integrate Supabase Auth [pending]
+### Dependencies: 2.1
+### Description: Implement email/password authentication using Supabase Auth's `signUp` and `signInWithPassword` methods.
+### Details:
+Connect the signup and login screens to Supabase Auth for user authentication.
+
+## 3. Implement Role Selection [pending]
+### Dependencies: 2.1
+### Description: Add a role selection component (e.g., radio buttons) during signup to allow users to choose between 'Coach' and 'Client'.
+### Details:
+Create a UI element for role selection and integrate it into the signup process.
+
+## 4. Store User Role in Supabase [pending]
+### Dependencies: 2.2, 2.3
+### Description: Store the selected user role (Coach/Client) in the Supabase `users` table during signup.
+### Details:
+Modify the signup process to save the selected role to the database.
+
+## 5. Implement Basic Profile Setup [pending]
+### Dependencies: 2.4
+### Description: Implement basic profile setup (Name, Age, Gender, Picture) and store the data in the `users` table.
+### Details:
+Create a profile setup screen and store the user's profile information in Supabase.
+

@@ -1,0 +1,160 @@
+# 🏋️ BarNation – Product Requirements Document (PRD)
+
+BarNation is a **mobile app for calisthenics/streetlifting coaches and clients**.  
+Built with **React Native (Expo)** + **Supabase**.  
+The app focuses on **simplicity, dark + neon UI, and progress tracking**.  
+
+---
+
+## 🚀 Overview
+- Coaches manage multiple clients.  
+- Clients follow structured workouts, upload videos, and track progress.  
+- **Monetization**: Free for clients, subscription-based for coaches (via **Stripe**, Razorpay later).  
+- Core philosophy: **simple, fast, no clutter, neon-dark UI**.  
+
+---
+
+## 👥 Users & Roles
+
+### Coach
+- Manage multiple clients.  
+- Assign workouts (weekly/daily).  
+- View client progress (graphs).  
+- Review video uploads (auto-compressed).  
+- Get notified when clients log workouts.  
+
+### Client
+- View assigned workouts.  
+- Log sets, reps, and weights.  
+- Upload form-check videos.  
+- Add workout notes.  
+- Track progress (graphs).  
+
+---
+
+## 📱 Core Features (MVP)
+
+### Authentication
+- Email + Password login/signup.  
+- Role selection (Coach / Client).  
+- Basic profile setup (Name, Age, Gender, Picture).  
+
+### Coach Features
+- Dashboard: client list (avatar, completion %, last activity).  
+- Add clients via email invite.  
+- Client profile: workouts, graphs, videos, notes.  
+- Assign workout plans (weekly).  
+- Notifications for client updates.  
+
+### Client Features
+- Daily dashboard with today’s workout.  
+- Log exercises (sets/reps/weights).  
+- ✅ Mark workout complete.  
+- Upload videos (compressed before upload).  
+- Notes section.  
+- History of past workouts.  
+- Progress charts.  
+
+### Progress Tracking
+- **Line Chart**: lift progression (e.g., weighted pull-up).  
+- **Bar Chart**: weekly training volume.  
+- **Ring Chart**: monthly completion rate.  
+
+---
+
+## 💰 Monetization Strategy
+
+Free for clients. Coaches subscribe:  
+
+### Free Plan
+- Up to **3 clients**.  
+- Basic workouts + tracking.  
+
+### Starter – $15/month  
+- Up to **10 clients**.  
+- Progress graphs unlocked.  
+
+### Pro – $29/month  
+- Up to **25 clients**.  
+- Video uploads + review.  
+- Advanced analytics (PRs, volume).  
+
+### Elite – $49/month  
+- Unlimited clients.  
+- All features.  
+- Priority support + extra storage.  
+
+---
+
+## 💳 Payments
+
+### Primary: **Stripe** (International)  
+- Subscription billing (monthly).  
+- Supports cards, Apple Pay, Google Pay.  
+- Stripe Checkout flow.  
+- Webhook to Supabase for syncing subscription status.  
+
+### Secondary (Future): **Razorpay** (India Expansion)  
+- UPI, Net Banking, Indian cards.  
+- Same webhook flow → Supabase.  
+
+---
+
+## 🔄 Payment & Subscription Flow
+
+### Stripe Checkout Flow
+1. Coach clicks **Upgrade** → App calls backend API → Stripe Checkout Session created.  
+2. User is redirected to Stripe-hosted checkout page.  
+3. Payment successful → Stripe webhook fires (`checkout.session.completed`).  
+4. Webhook server updates Supabase:
+   - `users.subscription_tier` → "starter", "pro", or "elite".  
+   - Insert row in `payments` table with status = active.  
+5. Client app listens to Supabase `subscription_tier` → unlock features instantly.  
+
+### Stripe Webhooks to Handle
+- `checkout.session.completed` → Subscription activated.  
+- `invoice.payment_failed` → Mark status = past_due.  
+- `customer.subscription.deleted` → Downgrade to free plan.  
+- `customer.subscription.updated` → Handle upgrades/downgrades.  
+
+### Supabase Sync
+When webhook triggers, update Supabase:
+
+```sql
+UPDATE users 
+SET subscription_tier = 'starter' 
+WHERE id = 'user_uuid';
+
+MVP 
+
+✅ Auth + role select.
+
+✅ Coach: add clients, assign workouts.
+
+✅ Client: log workouts, upload videos.
+
+✅ Basic progress charts.
+
+✅ Free plan (3 clients max).
+
+✅ Stripe integration (Starter/Pro/Elite).
+
+Phase 2 
+
+Subscription management (upgrade/downgrade inside app).
+
+Push/email notifications for coaches when clients log workouts.
+
+Razorpay integration (for India).
+
+Better video compression pipeline.
+
+Phase 3 (Future)
+
+In-app chat between coach ↔ client.
+
+AI-assisted form feedback on uploaded videos.
+
+Marketplace for workout plans (coaches can sell pre-made programs).
+
+Community features (leaderboards, challenges, badges).
