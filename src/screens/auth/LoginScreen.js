@@ -1,55 +1,70 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
-import { supabase } from '../../services/supabase';
+import React, { useState, useRef } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { supabase } from "../../services/supabase";
 
 export default function LoginScreen({ navigation }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const passwordInputRef = useRef();
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
-      Alert.alert('Missing Fields', 'Please enter both email and password.');
+      Alert.alert("Missing Fields", "Please enter both email and password.");
       return;
     }
 
     setIsLoading(true);
     try {
       // ✅ Use clearer destructuring
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       if (error) throw error;
 
-      const user = data.user; // cleaner reference
-      if (user) {
-        // Check if user exists in public.users table
-        const { data: existing, error: selErr } = await supabase
-          .from('users')
-          .select('id')
-          .eq('id', user.id)
-          .maybeSingle();
-        if (selErr) throw selErr;
+      // const user = data.user; // cleaner reference
+      // if (user) {
+      //   // Check if user exists in public.users table
+      //   const { data: existing, error: selErr } = await supabase
+      //     .from("users")
+      //     .select("id")
+      //     .eq("id", user.id)
+      //     .maybeSingle();
+      //   if (selErr) throw selErr;
 
-        // Insert into users table if not exists
-        if (!existing) {
-          const md = user.user_metadata ?? {};
-          const { error: upsertErr } = await supabase.from('users').upsert({
-            id: user.id,
-            email: user.email ?? email,
-            role: md.role ?? null, // don't force "client" here
-            name: md.name ?? null,
-            age: md.age ?? null,
-            gender: md.gender ?? null,
-          });
-          if (upsertErr) throw upsertErr;
-        }
-      }
+      //   // Insert into users table if not exists
+      //   if (!existing) {
+      //     const md = user.user_metadata ?? {};
+      //     const { error: upsertErr } = await supabase.from("users").upsert(
+      //       {
+      //         id: user.id,
+      //         email: user.email ?? email,
+      //         role: md.role ?? null, // don't force "client" here
+      //         name: md.name ?? null,
+      //         age: md.age ?? null,
+      //         gender: md.gender ?? null,
+      //       },
+      //       { onConflict: "id" }
+      //     );
+      //     if (upsertErr) throw upsertErr;
+      //   }
+      // }
 
       // AppNavigator handles navigation after login
-      Alert.alert('Welcome Back', 'Successfully logged into the BarNation');
+      Alert.alert("Welcome Back", "Successfully logged into the BarNation");
     } catch (err) {
-      Alert.alert('Login Failed', err.message ?? 'Unknown error');
+      Alert.alert("Login Failed", err.message ?? "Unknown error");
     } finally {
       setIsLoading(false);
     }
@@ -57,7 +72,7 @@ export default function LoginScreen({ navigation }) {
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
-      Alert.alert('Email Required', 'Please enter your email address first');
+      Alert.alert("Email Required", "Please enter your email address first");
       return;
     }
 
@@ -65,22 +80,30 @@ export default function LoginScreen({ navigation }) {
       const { error } = await supabase.auth.resetPasswordForEmail(email);
       if (error) throw error;
 
-      Alert.alert('Reset Email Sent', 'Check your email for password reset instructions');
+      Alert.alert(
+        "Reset Email Sent",
+        "Check your email for password reset instructions"
+      );
     } catch (error) {
-      Alert.alert('Reset Failed', error.message);
+      Alert.alert("Reset Failed", error.message);
     }
   };
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : null}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+      behavior={Platform.OS === "ios" ? "padding" : null}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
     >
       <View style={styles.header}>
         <Text style={styles.title}>WELCOME BACK TO THE</Text>
-        <Text style={styles.titleGlow}>BARNATION</Text>
-        <Text style={styles.subtitle}>Log in to your streetlifting account</Text>
+        <View style={{ flexDirection: "row" }}>
+          <Text style={styles.titleGlow}>BAR</Text>
+          <Text style={styles.titleGlow2}>NATION</Text>
+        </View>
+        <Text style={styles.subtitle}>
+          Log in to your streetlifting account
+        </Text>
       </View>
 
       <View style={styles.form}>
@@ -113,12 +136,16 @@ export default function LoginScreen({ navigation }) {
           />
           <TouchableOpacity
             style={styles.showPasswordButton}
-            onPress={() => setShowPassword(prev => !prev)}
+            onPress={() => setShowPassword((prev) => !prev)}
             activeOpacity={0.7}
             accessibilityRole="button"
-            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+            accessibilityLabel={
+              showPassword ? "Hide password" : "Show password"
+            }
           >
-            <Text style={styles.showPasswordText}>{showPassword ? 'HIDE' : 'SHOW'}</Text>
+            <Text style={styles.showPasswordText}>
+              {showPassword ? "HIDE" : "SHOW"}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -131,7 +158,7 @@ export default function LoginScreen({ navigation }) {
         </TouchableOpacity>
 
         <CustomButton
-          title={isLoading ? 'LOGGING IN...' : 'ENTER THE BARNATION'}
+          title={isLoading ? "LOGGING IN..." : "ENTER THE BARNATION"}
           onPress={handleLogin}
           disabled={isLoading}
           variant="primary"
@@ -139,7 +166,7 @@ export default function LoginScreen({ navigation }) {
 
         <CustomButton
           title="NEW TO THE BARNATION? SIGN UP"
-          onPress={() => navigation.navigate('Signup')}
+          onPress={() => navigation.navigate("Signup")}
           variant="secondary"
         />
       </View>
@@ -148,12 +175,16 @@ export default function LoginScreen({ navigation }) {
 }
 
 // Reusable Button Component
-function CustomButton({ title, onPress, disabled, variant = 'primary' }) {
+function CustomButton({ title, onPress, disabled, variant = "primary" }) {
   const getButtonStyle = () => {
     switch (variant) {
-      case 'primary':
-        return [styles.button, styles.buttonPrimary, disabled && styles.buttonDisabled];
-      case 'secondary':
+      case "primary":
+        return [
+          styles.button,
+          styles.buttonPrimary,
+          disabled && styles.buttonDisabled,
+        ];
+      case "secondary":
         return [styles.button, styles.buttonSecondary];
       default:
         return [styles.button, styles.buttonPrimary];
@@ -162,9 +193,9 @@ function CustomButton({ title, onPress, disabled, variant = 'primary' }) {
 
   const getTextStyle = () => {
     switch (variant) {
-      case 'primary':
+      case "primary":
         return [styles.buttonText, styles.buttonTextPrimary];
-      case 'secondary':
+      case "secondary":
         return [styles.buttonText, styles.buttonTextSecondary];
       default:
         return [styles.buttonText, styles.buttonTextPrimary];
@@ -187,78 +218,88 @@ function CustomButton({ title, onPress, disabled, variant = 'primary' }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: "#000000",
     padding: 20,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 40,
   },
   title: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 26,
-    fontWeight: '800',
+    fontWeight: "800",
     letterSpacing: 2,
-    textAlign: 'center',
+    textAlign: "center",
   },
   titleGlow: {
-    color: '#00ff41',
+    color: "#ffffffff",
     fontSize: 30,
-    fontWeight: '800',
+    fontWeight: "800",
     letterSpacing: 2,
-    textAlign: 'center',
-    textShadowColor: '#00ff41',
+    textAlign: "center",
+    textShadowColor: "#00ff41",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 20,
+  },
+  titleGlow2: {
+    color: "#00ff41",
+    fontSize: 30,
+    fontWeight: "800",
+    letterSpacing: 2,
+    textAlign: "center",
+    textShadowColor: "#00ff41",
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 20,
   },
   subtitle: {
-    color: '#d4d4d4',
+    color: "#d4d4d4",
     fontSize: 14,
     marginTop: 8,
-    textAlign: 'center',
+    textAlign: "center",
     letterSpacing: 1,
   },
   form: {
-    width: '100%',
+    width: "100%",
     maxWidth: 340,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   input: {
-    backgroundColor: '#1a1a1a',
-    color: '#ffffff',
+    backgroundColor: "#1a1a1a",
+    color: "#ffffff",
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderRadius: 8,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#262626',
+    borderColor: "#262626",
     fontSize: 16,
   },
   passwordContainer: {
-    position: 'relative',
+    position: "relative",
     marginBottom: 16,
   },
   showPasswordButton: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     top: 16,
     padding: 4,
     zIndex: 1,
   },
   showPasswordText: {
-    color: '#00ff41',
-    fontWeight: '600',
+    color: "#00ff41",
+    fontWeight: "600",
     fontSize: 12,
     letterSpacing: 1,
   },
   forgotPassword: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
     marginBottom: 24,
   },
   forgotPasswordText: {
-    color: '#00ff41',
-    fontWeight: '600',
+    color: "#00ff41",
+    fontWeight: "600",
     fontSize: 12,
     letterSpacing: 1,
   },
@@ -266,36 +307,36 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 12,
   },
   buttonPrimary: {
-    backgroundColor: '#00ff41',
-    shadowColor: '#00ff41',
+    backgroundColor: "#00ff41",
+    shadowColor: "#00ff41",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 10,
     elevation: 15,
   },
   buttonSecondary: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     borderWidth: 2,
-    borderColor: '#00ff41',
+    borderColor: "#00ff41",
   },
   buttonDisabled: {
-    backgroundColor: '#404040',
+    backgroundColor: "#404040",
     shadowOpacity: 0,
   },
   buttonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 1,
   },
   buttonTextPrimary: {
-    color: '#000000',
+    color: "#000000",
   },
   buttonTextSecondary: {
-    color: '#00ff41',
+    color: "#00ff41",
   },
 });

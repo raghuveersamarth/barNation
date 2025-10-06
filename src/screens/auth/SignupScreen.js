@@ -65,7 +65,10 @@ export default function SignupScreen({ navigation }) {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>ENTER THE</Text>
-        <Text style={styles.titleGlow}>BARNATION</Text>
+        <View style={{ flexDirection: "row" }}>
+          <Text style={styles.titleGlow}>BAR</Text>
+          <Text style={styles.titleGlow2}>NATION</Text>
+        </View>
         <Text style={styles.subtitle}>Create your streetlifting account</Text>
       </View>
 
@@ -359,6 +362,16 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   titleGlow: {
+    color: "#ffffffff",
+    fontSize: 28,
+    fontWeight: "800",
+    letterSpacing: 2,
+    textAlign: "center",
+    textShadowColor: "#00ff41",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 20,
+  },
+  titleGlow2: {
     color: "#00ff41",
     fontSize: 28,
     fontWeight: "800",

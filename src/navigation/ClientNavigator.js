@@ -5,6 +5,7 @@ import WorkoutScreen from '../screens/client/WorkoutScreen';
 import ProgressScreen from '../screens/client/ProgressScreen';
 import HistoryScreen from '../screens/client/HistoryScreen';
 import ProfileScreen from '../screens/shared/ProfileScreen';
+import Icon from 'react-native-vector-icons/MaterialIcons'; // Material Icons
 
 const Tab = createBottomTabNavigator();
 
@@ -36,8 +37,7 @@ export default function ClientNavigator() {
         component={ClientDashboardScreen}
         options={{
           tabBarIcon: ({ color }) => (
-            // <Icon name="today" color={color} size={24} />
-            null
+            <Icon name="today" color={color} size={24} />
           ),
         }}
       />
@@ -46,8 +46,7 @@ export default function ClientNavigator() {
         component={WorkoutScreen}
         options={{
           tabBarIcon: ({ color }) => (
-            // <Icon name="fitness-center" color={color} size={24} />
-            null
+            <Icon name="fitness-center" color={color} size={24} />
           ),
         }}
       />
@@ -56,8 +55,7 @@ export default function ClientNavigator() {
         component={ProgressScreen}
         options={{
           tabBarIcon: ({ color }) => (
-            // <Icon name="trending-up" color={color} size={24} />
-            null
+            <Icon name="trending-up" color={color} size={24} />
           ),
         }}
       />
@@ -66,8 +64,7 @@ export default function ClientNavigator() {
         component={HistoryScreen}
         options={{
           tabBarIcon: ({ color }) => (
-            // <Icon name="history" color={color} size={24} />
-            null
+            <Icon name="history" color={color} size={24} />
           ),
         }}
       />
@@ -76,8 +73,7 @@ export default function ClientNavigator() {
         component={ProfileScreen}
         options={{
           tabBarIcon: ({ color }) => (
-            // <Icon name="person" color={color} size={24} />
-            null
+            <Icon name="person" color={color} size={24} />
           ),
         }}
       />

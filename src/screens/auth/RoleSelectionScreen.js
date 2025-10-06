@@ -1,12 +1,18 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { supabase } from '../../services/supabase';
 
 export default function RoleSelectionScreen({ navigation }) {
 
-  const selectRole = (role) => {
+
     // No local state, just navigate
-    navigation.navigate('ProfileSetup', { role });
-  };
+
+    async function selectRole(role) {
+      //navigate to profile setup with role param
+      navigation.navigate('ProfileSetup', { role });
+    }
+
+  
 
   return (
     <View style={styles.container}>
