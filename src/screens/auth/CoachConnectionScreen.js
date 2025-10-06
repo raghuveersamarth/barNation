@@ -10,6 +10,7 @@ import {
   TextInput,
 } from "react-native";
 import InviteService from "../../services/inviteService";
+import { supabase } from "../../services/supabase";
 import Button from "../../components/common/Button";
 
 export default function CoachConnectionScreen({ navigation }) {

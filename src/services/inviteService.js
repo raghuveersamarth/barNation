@@ -208,6 +208,7 @@ export class InviteService {
    * @param {string} clientId - The client's user ID
    * @returns {Promise<Object|null>} Coach info or null if no coach
    */
+  
   static async getClientCoach(clientId) {
     try {
       const { data, error } = await supabase

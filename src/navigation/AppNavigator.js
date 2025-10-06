@@ -4,9 +4,11 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AppState } from "react-native";
 import { supabase } from "../services/supabase";
+
 import AuthNavigator from "./AuthNavigator";
 import CoachNavigator from "./CoachNavigator";
 import ClientNavigator from "./ClientNavigator";
+
 import RoleSelectionScreen from "../screens/auth/RoleSelectionScreen";
 import ProfileSetupScreen from "../screens/auth/ProfileSetupScreen";
 import SubscriptionScreen from "../screens/shared/SubscriptionScreen";
@@ -16,13 +18,13 @@ import VideoUploadScreen from "../screens/client/VideoUploadScreen";
 
 const Stack = createNativeStackNavigator();
 
-export default function AppNavigator() {
+export default function AppNavigator({ navigation }) {
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Initial session
+    // Get initial session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
         console.error(error);
@@ -34,14 +36,14 @@ export default function AppNavigator() {
       else setLoading(false);
     });
 
-    // Auth state change listener
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) ensureUserInDB(session.user);
       else setUserRole(null);
     });
 
-    // Refresh profile when app comes to foreground
+    // Refresh user profile when app comes to foreground
     const appStateSubscription = AppState.addEventListener("change", (nextAppState) => {
       if (nextAppState === "active" && user) ensureUserInDB(user);
     });
@@ -69,9 +71,10 @@ export default function AppNavigator() {
           email: authUser.email,
           role: null,
           profile_complete: false,
+          has_coach: false,
           created_at: new Date().toISOString(),
         });
-        setUserRole({ role: null, profile_complete: false });
+        setUserRole({ role: null, profile_complete: false, has_coach: false });
       } else {
         setUserRole(data);
       }
@@ -100,19 +103,35 @@ export default function AppNavigator() {
           </>
         )}
 
-        {/* Main apps - always registered */}
-        <Stack.Screen name="CoachApp" component={CoachNavigator} />
-        <Stack.Screen name="ClientApp" component={ClientNavigator} />
+        {/* Main apps */}
+        {user && userRole?.profile_complete && userRole.role === "coach" && (
+          userRole.subscription_tier && userRole.subscription_status === "active" ? (
+            <Stack.Screen name="CoachApp" component={CoachNavigator} />
+          ) : (
+            <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+          )
+        )}
 
-        {/* Modals */}
+        {user && userRole?.profile_complete && userRole.role === "client" && (
+          <>
+            {/* If client has a coach, go to ClientApp */}
+            {userRole.has_coach ? (
+              <Stack.Screen name="ClientApp" component={ClientNavigator} />
+            ) : (
+              // Else, navigate to CoachConnection modal
+              <Stack.Screen
+                name="CoachConnection"
+                component={CoachConnectionScreen}
+                options={{ presentation: "modal" }}
+              />
+            )}
+          </>
+        )}
+
+        {/* Global modals */}
         <Stack.Screen
           name="Subscription"
           component={SubscriptionScreen}
-          options={{ presentation: "modal" }}
-        />
-        <Stack.Screen
-          name="CoachConnection"
-          component={CoachConnectionScreen}
           options={{ presentation: "modal" }}
         />
         <Stack.Screen
