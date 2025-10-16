@@ -1,5 +1,5 @@
 // src/navigation/AppNavigator.js
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AppState } from "react-native";
@@ -18,7 +18,7 @@ import VideoUploadScreen from "../screens/client/VideoUploadScreen";
 
 const Stack = createNativeStackNavigator();
 
-export default function AppNavigator({ navigation }) {
+export default function AppNavigator() {
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -71,10 +71,9 @@ export default function AppNavigator({ navigation }) {
           email: authUser.email,
           role: null,
           profile_complete: false,
-          has_coach: false,
           created_at: new Date().toISOString(),
         });
-        setUserRole({ role: null, profile_complete: false, has_coach: false });
+        setUserRole({ role: null, profile_complete: false });
       } else {
         setUserRole(data);
       }
@@ -108,29 +107,26 @@ export default function AppNavigator({ navigation }) {
           userRole.subscription_tier && userRole.subscription_status === "active" ? (
             <Stack.Screen name="CoachApp" component={CoachNavigator} />
           ) : (
-            <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+            <Stack.Screen name="CoachSubscription" component={SubscriptionScreen} />
           )
         )}
 
         {user && userRole?.profile_complete && userRole.role === "client" && (
           <>
-            {/* If client has a coach, go to ClientApp */}
-            {userRole.has_coach ? (
-              <Stack.Screen name="ClientApp" component={ClientNavigator} />
-            ) : (
-              // Else, navigate to CoachConnection modal
-              <Stack.Screen
-                name="CoachConnection"
-                component={CoachConnectionScreen}
-                options={{ presentation: "modal" }}
-              />
-            )}
+            {/* Always show CoachConnection modal first for clients */}
+            <Stack.Screen
+              name="CoachConnection"
+              component={CoachConnectionScreen}
+              options={{ presentation: "modal" }}
+            />
+            {/* After connecting to coach, show ClientApp */}
+            <Stack.Screen name="ClientApp" component={ClientNavigator} />
           </>
         )}
 
         {/* Global modals */}
         <Stack.Screen
-          name="Subscription"
+          name="GlobalSubscription"
           component={SubscriptionScreen}
           options={{ presentation: "modal" }}
         />

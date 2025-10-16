@@ -1,104 +1,167 @@
 // src/screens/client/ClientDashboardScreen.js
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
+import InviteService from '../../services/inviteService';
 import { supabase } from '../../services/supabase';
 
-function formatYMD(date = new Date()) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
 export default function ClientDashboardScreen() {
+  const [hasCoach, setHasCoach] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [exercises, setExercises] = useState([]);
-  const [message, setMessage] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
+  const [isConnecting, setIsConnecting] = useState(false);
 
-  const fetchTodaysWorkout = useCallback(async () => {
-    setLoading(true);
-    setMessage('');
+  useEffect(() => {
+    checkCoachStatus();
+  }, []);
+
+  const checkCoachStatus = async () => {
     try {
-      const { data: { user }, error: userErr } = await supabase.auth.getUser();
-      if (userErr) throw userErr;
-      const userId = user?.id;
-      if (!userId) throw new Error('No session');
-
-      const today = formatYMD();
-      const { data: workouts, error: wErr } = await supabase
-        .from('workouts')
-        .select('id, title')
-        .eq('client_id', userId)
-        .eq('date', today)
-        .limit(1);
-
-      if (wErr) throw wErr;
-
-      if (!workouts || workouts.length === 0) {
-        setExercises([]);
-        setMessage("No workout assigned for today.");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setHasCoach(false);
         return;
       }
 
-      const workoutId = workouts[0].id;
-      const { data: rows, error: eErr } = await supabase
-        .from('workout_exercises')
-        .select('id, name, sets, reps, weight')
-        .eq('workout_id', workoutId)
-        .order('id');
-
-      if (eErr) throw eErr;
-
-      setExercises(rows ?? []);
-      if (!rows || rows.length === 0) {
-        setMessage('Workout has no exercises yet.');
-      }
-    } catch (err) {
-      setMessage(err.message ?? 'Failed to fetch workout');
-      setExercises([]);
+      const coachData = await InviteService.getClientCoach(user.id);
+      setHasCoach(!!coachData);
+    } catch (error) {
+      console.error('Error checking coach status:', error);
+      setHasCoach(false);
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    fetchTodaysWorkout();
-  }, [fetchTodaysWorkout]);
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchTodaysWorkout();
-    setRefreshing(false);
   };
 
+  const handleConnect = async () => {
+    if (!inviteCode.trim()) {
+      Alert.alert('Missing Code', 'Please enter your coach\'s invite code');
+      return;
+    }
+
+    if (inviteCode.length < 4) {
+      Alert.alert('Invalid Code', 'Invite code must be at least 4 characters');
+      return;
+    }
+
+    setIsConnecting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('No authenticated user found');
+      }
+
+      const result = await InviteService.acceptInvite(inviteCode, user.id);
+
+      Alert.alert(
+        'Connected Successfully!',
+        result.message + ' Your streetlifting journey begins now!',
+        [{ 
+          text: 'Start Training', 
+          onPress: () => {
+            setInviteCode('');
+            checkCoachStatus(); // Refresh the screen
+          }
+        }]
+      );
+
+    } catch (error) {
+      console.error('Connection error:', error);
+      
+      let errorMessage = 'Failed to connect to coach';
+      if (error.message.includes('Invalid or expired')) {
+        errorMessage = 'This invite code is invalid or has expired.';
+      } else if (error.message.includes('already connected')) {
+        errorMessage = 'You are already connected to this coach.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert('Connection Failed', errorMessage);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  // Show loading state
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color="#b3ff00" />
-        <Text style={styles.hint}>Loading today's workout…</Text>
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
 
+  // Show connect screen if no coach
+  if (!hasCoach) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>BARNATION</Text>
+        </View>
+
+        <View style={styles.content}>
+          <Text style={styles.title}>Enter your coach's code</Text>
+          <Text style={styles.subtitle}>
+            Enter the code provided by your coach to link your accounts.
+          </Text>
+
+          <TextInput
+            style={styles.codeInput}
+            placeholder="C O A C H - C O D E"
+            placeholderTextColor="#404040"
+            value={inviteCode}
+            onChangeText={(text) => setInviteCode(text.toUpperCase())}
+            maxLength={12}
+            autoCapitalize="characters"
+            textAlign="center"
+            letterSpacing={4}
+          />
+
+          <TouchableOpacity 
+            style={[
+              styles.connectButton,
+              (!inviteCode.trim() || inviteCode.length < 4) && styles.connectButtonDisabled
+            ]}
+            onPress={handleConnect}
+            disabled={isConnecting || !inviteCode.trim() || inviteCode.length < 4}
+          >
+            <Text style={styles.connectButtonText}>
+              {isConnecting ? 'Connecting...' : 'Connect'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.skipButton}
+            onPress={() => setHasCoach(true)} // Temporarily set to true to show dashboard
+          >
+            <Text style={styles.skipText}>Skip for now</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.noteText}>
+            You can connect with a coach later from your profile
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Show main dashboard when they have a coach
   return (
-    <View style={styles.container}>
-      {message ? <Text style={styles.message}>{message}</Text> : null}
-      <FlatList
-        data={exercises}
-        keyExtractor={(item) => String(item.id)}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.name}>{item.name}</Text>
-            <Text style={styles.detail}>Sets: {item.sets}  Reps: {item.reps}  Weight: {item.weight ?? '-' } kg</Text>
-          </View>
-        )}
-        ListEmptyComponent={!message ? (
-          <Text style={styles.hint}>No exercises to display.</Text>
-        ) : null}
-        contentContainerStyle={exercises.length === 0 ? styles.centerPad : undefined}
-      />
+    <View style={styles.dashboardContainer}>
+      <View style={styles.dashboardHeader}>
+        <Text style={styles.dashboardTitle}>TODAY'S SESSION</Text>
+        <Text style={styles.dashboardSubtitle}>Ready to lift?</Text>
+      </View>
+
+      <View style={styles.dashboardContent}>
+        <Text style={styles.emptyStateText}>
+          Your coach will assign workouts here.
+        </Text>
+        <Text style={styles.emptyStateSubtext}>
+          Check back soon for your training program!
+        </Text>
+      </View>
     </View>
   );
 }
@@ -106,44 +169,133 @@ export default function ClientDashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0b0b0b',
-    padding: 16,
+    backgroundColor: '#1a4a3a',
   },
-  center: {
+  loadingContainer: {
     flex: 1,
-    backgroundColor: '#0b0b0b',
-    alignItems: 'center',
+    backgroundColor: '#000000',
     justifyContent: 'center',
-    padding: 16,
-  },
-  centerPad: {
-    flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  message: {
-    color: '#b3ff00',
-    marginBottom: 12,
-  },
-  card: {
-    backgroundColor: '#101010',
-    borderWidth: 1,
-    borderColor: '#222',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
-  },
-  name: {
-    color: '#fff',
+  loadingText: {
+    color: '#d4d4d4',
     fontSize: 16,
+  },
+  header: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    color: '#00ff41',
+    fontSize: 32,
+    fontWeight: '800',
+    letterSpacing: 3,
+    textShadowColor: '#00ff41',
+    textShadowRadius: 20,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 40,
+    paddingTop: 60,
+    alignItems: 'center',
+  },
+  title: {
+    color: '#ffffff',
+    fontSize: 28,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 36,
+  },
+  subtitle: {
+    color: '#a0a0a0',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 60,
+    lineHeight: 24,
+    maxWidth: 280,
+  },
+  codeInput: {
+    backgroundColor: 'transparent',
+    borderBottomWidth: 2,
+    borderBottomColor: '#404040',
+    color: '#ffffff',
+    fontSize: 24,
     fontWeight: '600',
-    marginBottom: 6,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    marginBottom: 40,
+    width: '100%',
+    maxWidth: 300,
   },
-  detail: {
-    color: '#ccc',
+  connectButton: {
+    backgroundColor: '#00ff41',
+    paddingVertical: 16,
+    paddingHorizontal: 60,
+    borderRadius: 8,
+    width: '100%',
+    maxWidth: 300,
+    alignItems: 'center',
+    marginBottom: 24,
   },
-  hint: {
-    color: '#888',
+  connectButtonDisabled: {
+    backgroundColor: '#404040',
+  },
+  connectButtonText: {
+    color: '#000000',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  skipText: {
+    color: '#808080',
+    fontSize: 14,
+    textAlign: 'center',
+    maxWidth: 280,
+  },
+  dashboardContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  dashboardHeader: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#00ff41',
+    alignItems: 'center',
+  },
+  dashboardTitle: {
+    color: '#00ff41',
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: 2,
+    textShadowColor: '#00ff41',
+    textShadowRadius: 15,
+  },
+  dashboardSubtitle: {
+    color: '#d4d4d4',
+    fontSize: 14,
     marginTop: 8,
+    letterSpacing: 1,
+  },
+  dashboardContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  emptyStateText: {
+    color: '#d4d4d4',
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  emptyStateSubtext: {
+    color: '#737373',
+    fontSize: 14,
+    textAlign: 'center',
   },
 });

@@ -11,54 +11,55 @@ export default function ProfileSetupScreen({ navigation, route }) {
   const [gender, setGender] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-const handleProfileSetup = async () => {
-  if (!name || !age || !gender) {
-    Alert.alert('Missing Info', 'Please fill in all fields');
-    return;
-  }
-  setIsLoading(true);
-
-  try {
-    // Get logged-in user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) throw userError;
-
-    // Build update object
-    const updateData = {
-      role,
-      name,
-      age: parseInt(age, 10),
-      gender,
-      profile_complete: true,
-    };
-
-    // If client, enforce subscription_tier = null
-    if (role === 'client') {
-      updateData.subscription_tier = null;
+  const handleProfileSetup = async () => {
+    if (!name || !age || !gender) {
+      Alert.alert('Missing Info', 'Please fill in all fields');
+      return;
     }
+    setIsLoading(true);
 
-    // Update row
-    const { error: updateError } = await supabase
-      .from('users')
-      .update(updateData)
-      .eq('id', user.id);
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw userError;
 
-    if (updateError) throw updateError;
+      const updateData = {
+        role,
+        name,
+        age: parseInt(age, 10),
+        gender,
+        profile_complete: true,
+      };
 
-    // Navigate depending on role
-    if (role === 'coach') {
-      navigation.navigate('Subscription'); 
-    } else {
-      navigation.navigate('CoachConnection'); 
+      if (role === 'client') {
+        updateData.subscription_tier = null;
+      }
+
+      const { error: updateError } = await supabase
+        .from('users')
+        .update(updateData)
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      // Force session refresh
+      await supabase.auth.refreshSession();
+      
+      // Wait a bit for the refresh to propagate
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Trigger a manual refresh by updating a dummy auth metadata field
+      await supabase.auth.updateUser({
+        data: { last_profile_update: new Date().toISOString() }
+      });
+
+      console.log('Profile setup complete');
+
+    } catch (err) {
+      Alert.alert('Setup Failed', err.message ?? 'Unknown error');
+    } finally {
+      setIsLoading(false);
     }
-  } catch (err) {
-    Alert.alert('Setup Failed', err.message ?? 'Unknown error');
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-
+  };
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -84,8 +85,11 @@ const handleProfileSetup = async () => {
         </View>
       </View>
 
-      <Button title={isLoading ? 'Setting Up...' : 'Complete Setup'} onPress={handleProfileSetup} disabled={isLoading} />
-      <Button title="Back" onPress={() => navigation.goBack()} variant="ghost" />
+      <Button 
+        title={isLoading ? 'Setting Up...' : 'Complete Setup'} 
+        onPress={handleProfileSetup} 
+        disabled={isLoading} 
+      />
     </KeyboardAvoidingView>
   );
 }

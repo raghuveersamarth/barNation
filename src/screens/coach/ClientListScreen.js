@@ -30,6 +30,7 @@ export default function ClientListScreen({ navigation }) {
 
       setClients(clientsData);
       setInvites(invitesData);
+      console.log(clients)
     } catch (error) {
       console.error('Error loading data:', error);
       Alert.alert('Error', 'Failed to load client data');
@@ -228,11 +229,13 @@ export default function ClientListScreen({ navigation }) {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>ACTIVE CLIENTS</Text>
             {clients.map((client) => (
-              <ClientCard key={client.id} client={client} />
-            ))}
+              <ClientCard
+                key={(client.linkId ?? client.client?.id ?? client.client_id ?? client.id ?? '').toString()}
+                client={client}
+              />
+           ))}
           </View>
         )}
-
         {/* Pending Invites */}
         {invites.length > 0 && (
           <View style={styles.section}>

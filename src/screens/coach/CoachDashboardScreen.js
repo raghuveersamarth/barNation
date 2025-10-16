@@ -1,153 +1,183 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+// src/screens/coach/CoachDashboardScreen.js
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { supabase } from '../../services/supabase';
+import InviteService from '../../services/inviteService';
 
-function formatYMD(date = new Date()) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-export default function CoachDashboardScreen() {
+export default function CoachDashboardScreen({ navigation }) {
+  const [coachName, setCoachName] = useState('Coach');
+  const [recentClients, setRecentClients] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [exercises, setExercises] = useState([]);
-  const [message, setMessage] = useState('');
 
-  const fetchTodayWorkout = useCallback(async () => {
-    setLoading(true);
-    setMessage('');
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
     try {
-      const {
-        data: { user },
-        error: userErr,
-      } = await supabase.auth.getUser();
-      if (userErr) throw userErr;
-      const userId = user?.id;
-      if (!userId) throw new Error('No session');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-      // Example schema assumptions:
-      // - workouts table: id, user_id, date (YYYY-MM-DD), title
-      // - workout_exercises table: id, workout_id, name, sets, reps, weight
-      const today = formatYMD();
-      const { data: workouts, error: wErr } = await supabase
-        .from('workouts')
-        .select('id, title')
-        .eq('user_id', userId)
-        .eq('date', today)
-        .limit(1);
-      if (wErr) throw wErr;
+      // Get coach name
+      const { data: userData } = await supabase
+        .from('users')
+        .select('name')
+        .eq('id', user.id)
+        .single();
 
-      if (!workouts || workouts.length === 0) {
-        setExercises([]);
-        setMessage("No workout assigned for today.");
-        return;
-      }
+      setCoachName(userData?.name || 'Coach');
 
-      const workoutId = workouts[0].id;
-      const { data: rows, error: eErr } = await supabase
-        .from('workout_exercises')
-        .select('id, name, sets, reps, weight')
-        .eq('workout_id', workoutId)
-        .order('id');
-      if (eErr) throw eErr;
-      setExercises(rows ?? []);
-      if (!rows || rows.length === 0) {
-        setMessage('Workout has no exercises yet.');
-      }
-    } catch (err) {
-      setMessage(err.message ?? 'Failed to fetch workout');
-      setExercises([]);
+      // Get recent clients
+      console.log(user.id)
+      const clients = await InviteService.getCoachClients(user.id);
+      console.log(clients)
+      // Filter out invalid clients
+      const filteredClients = clients.filter(item => item.client);
+      setRecentClients(filteredClients.slice(0, 5));
+
+    } catch (error) {
+      console.error('Error loading dashboard:', error);
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    fetchTodayWorkout();
-  }, [fetchTodayWorkout]);
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchTodayWorkout();
-    setRefreshing(false);
   };
 
-  if (loading) {
+  const getRelativeTime = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return 'today';
+    if (diffDays === 1) return '1 day ago';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 14) return '1 week ago';
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return `${Math.floor(diffDays / 30)} months ago`;
+  };
+
+  const ClientItem = ({ client }) => {
+    const name = client.client?.name || 'Unnamed Client';
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color="#b3ff00" />
-        <Text style={styles.hint}>Loading today\'s workout…</Text>
-      </View>
+      <TouchableOpacity
+        style={styles.clientItem}
+        onPress={() => navigation.navigate('ClientDetails', { clientId: client.client?.id })}
+      >
+        <View style={styles.clientAvatar}>
+          <Text style={styles.clientAvatarText}>
+            {name?.[0]?.toUpperCase() || 'C'}
+          </Text>
+        </View>
+        <View style={styles.clientInfo}>
+          <Text style={styles.clientName}>{name}</Text>
+          <Text style={styles.clientActivity}>
+            Last active: {getRelativeTime(client.created_at)}
+          </Text>
+        </View>
+        <Text style={styles.clientArrow}>›</Text>
+      </TouchableOpacity>
     );
-  }
+  };
 
   return (
-    <View style={styles.container}>
-      {message ? <Text style={styles.message}>{message}</Text> : null}
-      <FlatList
-        data={exercises}
-        keyExtractor={(item) => String(item.id)}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.name}>{item.name}</Text>
-            <Text style={styles.detail}>Sets: {item.sets}  Reps: {item.reps}  Weight: {item.weight ?? '-'} kg</Text>
+    <ScrollView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.menuButton}>
+          <Text style={styles.menuIcon}>☰</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Dashboard</Text>
+        <View style={styles.placeholder} />
+      </View>
+
+      {/* Welcome Section */}
+      <View style={styles.welcomeSection}>
+        <Text style={styles.welcomeText}>Welcome back, Coach {coachName}!</Text>
+      </View>
+
+      {/* Assign Workouts Card */}
+      <View style={styles.assignCard}>
+        <Text style={styles.assignTitle}>Assign workouts to your clients</Text>
+        <Text style={styles.assignSubtitle}>
+          Get your clients moving and motivated by assigning them personalized workouts
+        </Text>
+        <TouchableOpacity
+          style={styles.assignButton}
+          onPress={() => navigation.navigate('CreateWorkout')}
+        >
+          <Text style={styles.assignButtonText}>Assign Workouts</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Clients Section */}
+      <View style={styles.clientsSection}>
+        <View style={styles.clientsHeader}>
+          <Text style={styles.clientsTitle}>Clients</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Clients')}>
+            <Text style={styles.viewAllText}>View All →</Text>
+          </TouchableOpacity>
+        </View>
+
+        {// ...existing code...
+        loading ? (
+          <Text style={styles.loadingText}>Loading clients...</Text>
+        ) : recentClients.length > 0 ? (
+          recentClients.map((client) => (
+            <ClientItem
+              key={(client.linkId ?? client.client?.id ?? '').toString()} // <-- use stable UUID
+              client={client}
+            />
+          ))
+        ) : (
+// ...existing code... : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateIcon}>👥</Text>
+            <Text style={styles.emptyStateText}>No clients yet</Text>
+            <Text style={styles.emptyStateSubtext}>
+              Invite your first client to get started
+            </Text>
+            <TouchableOpacity
+              style={styles.emptyStateButton}
+              onPress={() => navigation.navigate('Clients')}
+            >
+              <Text style={styles.emptyStateButtonText}>Invite Client</Text>
+            </TouchableOpacity>
           </View>
         )}
-        ListEmptyComponent={!message ? (
-          <Text style={styles.hint}>No exercises to display.</Text>
-        ) : null}
-        contentContainerStyle={exercises.length === 0 ? styles.centerPad : undefined}
-      />
-    </View>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0b0b0b',
-    padding: 16,
-  },
-  center: {
-    flex: 1,
-    backgroundColor: '#0b0b0b',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  centerPad: {
-    flexGrow: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  message: {
-    color: '#b3ff00',
-    marginBottom: 12,
-  },
-  card: {
-    backgroundColor: '#101010',
-    borderWidth: 1,
-    borderColor: '#222',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
-  },
-  name: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  detail: {
-    color: '#ccc',
-  },
-  hint: {
-    color: '#888',
-    marginTop: 8,
-  },
+  container: { flex: 1, backgroundColor: '#0a2820' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 60, paddingHorizontal: 20, paddingBottom: 20 },
+  menuButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  menuIcon: { color: '#ffffff', fontSize: 24 },
+  headerTitle: { color: '#ffffff', fontSize: 20, fontWeight: '600' },
+  placeholder: { width: 40 },
+  welcomeSection: { paddingHorizontal: 20, marginBottom: 24 },
+  welcomeText: { color: '#ffffff', fontSize: 24, fontWeight: '700', lineHeight: 32 },
+  assignCard: { backgroundColor: '#00ff41', marginHorizontal: 20, borderRadius: 16, padding: 24, marginBottom: 32 },
+  assignTitle: { color: '#000000', fontSize: 18, fontWeight: '700', marginBottom: 8 },
+  assignSubtitle: { color: '#1a4a3a', fontSize: 14, lineHeight: 20, marginBottom: 20 },
+  assignButton: { backgroundColor: '#0a2820', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+  assignButtonText: { color: '#00ff41', fontSize: 16, fontWeight: '700' },
+  clientsSection: { paddingHorizontal: 20, paddingBottom: 40 },
+  clientsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  clientsTitle: { color: '#ffffff', fontSize: 20, fontWeight: '700' },
+  viewAllText: { color: '#00ff41', fontSize: 14, fontWeight: '600' },
+  clientItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0f3529', borderRadius: 12, padding: 16, marginBottom: 12 },
+  clientAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#00ff41', alignItems: 'center', justifyContent: 'center', marginRight: 16 },
+  clientAvatarText: { color: '#000000', fontSize: 20, fontWeight: '700' },
+  clientInfo: { flex: 1 },
+  clientName: { color: '#ffffff', fontSize: 16, fontWeight: '600', marginBottom: 4 },
+  clientActivity: { color: '#808080', fontSize: 13 },
+  clientArrow: { color: '#808080', fontSize: 24, fontWeight: '300' },
+  loadingText: { color: '#808080', fontSize: 14, textAlign: 'center', padding: 32 },
+  emptyState: { alignItems: 'center', paddingVertical: 48 },
+  emptyStateIcon: { fontSize: 64, marginBottom: 16 },
+  emptyStateText: { color: '#ffffff', fontSize: 18, fontWeight: '600', marginBottom: 8 },
+  emptyStateSubtext: { color: '#808080', fontSize: 14, marginBottom: 24, textAlign: 'center' },
+  emptyStateButton: { backgroundColor: '#00ff41', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 },
+  emptyStateButtonText: { color: '#000000', fontSize: 16, fontWeight: '700' },
 });
-
-
