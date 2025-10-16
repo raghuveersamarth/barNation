@@ -30,7 +30,6 @@ export default function ClientListScreen({ navigation }) {
 
       setClients(clientsData);
       setInvites(invitesData);
-      console.log(clients)
     } catch (error) {
       console.error('Error loading data:', error);
       Alert.alert('Error', 'Failed to load client data');

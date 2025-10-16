@@ -91,7 +91,6 @@ export class InviteService {
       if (error) throw error;
 
       // Log to verify structure (optional)
-      console.log("Validated invite:", data);
 
       return data;
     } catch (error) {
@@ -114,11 +113,11 @@ static async acceptInvite(inviteCode, clientId) {
       throw new Error("Invalid or expired invite code");
     }
 
-    console.log("Accepting invite:", { 
-      inviteId: invite.id, 
-      coachId: invite.coach_id, 
-      clientId 
-    });
+    // console.log("Accepting invite:", { 
+    //   inviteId: invite.id, 
+    //   coachId: invite.coach_id, 
+    //   clientId 
+    // });
 
     // 1. Create the coach-client relationship
     const { error: connectionError } = await supabase
@@ -132,7 +131,7 @@ static async acceptInvite(inviteCode, clientId) {
       if (connectionError.code === "23505") {
         // Duplicate key - client already connected
         // Still mark the invite as accepted since the relationship exists
-        console.log("Client already connected, marking invite as accepted anyway");
+        // console.log("Client already connected, marking invite as accepted anyway");
       } else {
         throw connectionError;
       }
@@ -155,7 +154,7 @@ static async acceptInvite(inviteCode, clientId) {
       // Don't throw - the connection was created, which is most important
       // But log it prominently so you know there's an issue
     } else {
-      console.log("✅ Invite marked as accepted:", updatedInvite);
+      // console.log("✅ Invite marked as accepted:", updatedInvite);
     }
 
     // Verify the update worked
@@ -166,7 +165,7 @@ static async acceptInvite(inviteCode, clientId) {
       .single();
 
     if (!verifyError) {
-      console.log("Verification - Invite status:", verifyInvite);
+      // console.log("Verification - Invite status:", verifyInvite);
       if (verifyInvite.status !== "accepted") {
         console.error("⚠️ WARNING: Invite status was not updated to 'accepted'!");
       }
@@ -242,7 +241,7 @@ static async acceptInvite(inviteCode, clientId) {
         .eq("coach_id", coachId)
         .order("created_at", { ascending: false });
 
-      console.log("raw coach_clients data:", data, "error:", error);
+      // console.log("raw coach_clients data:", data, "error:", error);
       if (error) throw error;
 
       // If nested join worked, return mapped clients
@@ -251,7 +250,7 @@ static async acceptInvite(inviteCode, clientId) {
         .filter(Boolean);
 
       if (clientsWithNested.length > 0) {
-        console.log("clients (nested):", clientsWithNested);
+        // console.log("clients (nested):", clientsWithNested);
         return clientsWithNested;
       }
 
@@ -269,7 +268,7 @@ static async acceptInvite(inviteCode, clientId) {
       if (usersErr) throw usersErr;
 
       // Map users back to links
-      console.log("raw coach_clients data:", data);
+      // console.log("raw coach_clients data:", data);
       const usersById = (users || []).reduce((acc, u) => { acc[u.id] = u; return acc; }, {});
       const clients = (data || [])
         .map((row) => {
@@ -278,7 +277,7 @@ static async acceptInvite(inviteCode, clientId) {
         })
         .filter(Boolean);
 
-      console.log("clients (fallback):", clients);
+      // console.log("clients (fallback):", clients);
       return clients;
     } catch (error) {
       console.error("Error fetching coach clients:", error);

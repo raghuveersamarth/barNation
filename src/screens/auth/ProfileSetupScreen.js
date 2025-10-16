@@ -52,7 +52,6 @@ export default function ProfileSetupScreen({ navigation, route }) {
         data: { last_profile_update: new Date().toISOString() }
       });
 
-      console.log('Profile setup complete');
 
     } catch (err) {
       Alert.alert('Setup Failed', err.message ?? 'Unknown error');

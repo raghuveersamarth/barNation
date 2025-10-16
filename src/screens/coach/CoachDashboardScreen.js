@@ -28,9 +28,8 @@ export default function CoachDashboardScreen({ navigation }) {
       setCoachName(userData?.name || 'Coach');
 
       // Get recent clients
-      console.log(user.id)
+
       const clients = await InviteService.getCoachClients(user.id);
-      console.log(clients)
       // Filter out invalid clients
       const filteredClients = clients.filter(item => item.client);
       setRecentClients(filteredClients.slice(0, 5));
