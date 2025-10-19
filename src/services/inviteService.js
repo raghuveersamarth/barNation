@@ -105,6 +105,7 @@ export class InviteService {
    * @param {string} clientId - The client's user ID
    * @returns {Promise<Object>} Success result with coach info
    */
+// ...existing code...
 static async acceptInvite(inviteCode, clientId) {
   try {
     // First validate the invite
@@ -113,11 +114,24 @@ static async acceptInvite(inviteCode, clientId) {
       throw new Error("Invalid or expired invite code");
     }
 
-    // console.log("Accepting invite:", { 
-    //   inviteId: invite.id, 
-    //   coachId: invite.coach_id, 
-    //   clientId 
-    // });
+    // If the coach provided a client email when creating the invite,
+    // ensure the accepting user's email matches that email.
+    if (invite.client_email) {
+      const { data: userRecord, error: userErr } = await supabase
+        .from("users")
+        .select("email")
+        .eq("id", clientId)
+        .maybeSingle();
+
+      if (userErr) throw userErr;
+      if (!userRecord || !userRecord.email) {
+        throw new Error("Accepting user record not found or missing email");
+      }
+
+      if (userRecord.email.toLowerCase() !== invite.client_email.toLowerCase()) {
+        throw new Error("This invite was issued to a different email address");
+      }
+    }
 
     // 1. Create the coach-client relationship
     const { error: connectionError } = await supabase
@@ -131,13 +145,12 @@ static async acceptInvite(inviteCode, clientId) {
       if (connectionError.code === "23505") {
         // Duplicate key - client already connected
         // Still mark the invite as accepted since the relationship exists
-        // console.log("Client already connected, marking invite as accepted anyway");
       } else {
         throw connectionError;
       }
     }
 
-    // 2. Mark the invite as accepted (THIS IS THE CRITICAL PART)
+    // 2. Mark the invite as accepted
     const { data: updatedInvite, error: inviteUpdateError } = await supabase
       .from("coach_invites")
       .update({
@@ -151,10 +164,6 @@ static async acceptInvite(inviteCode, clientId) {
 
     if (inviteUpdateError) {
       console.error("CRITICAL: Failed to update invite status:", inviteUpdateError);
-      // Don't throw - the connection was created, which is most important
-      // But log it prominently so you know there's an issue
-    } else {
-      // console.log("✅ Invite marked as accepted:", updatedInvite);
     }
 
     // Verify the update worked
@@ -165,7 +174,6 @@ static async acceptInvite(inviteCode, clientId) {
       .single();
 
     if (!verifyError) {
-      // console.log("Verification - Invite status:", verifyInvite);
       if (verifyInvite.status !== "accepted") {
         console.error("⚠️ WARNING: Invite status was not updated to 'accepted'!");
       }
@@ -183,7 +191,7 @@ static async acceptInvite(inviteCode, clientId) {
     throw error;
   }
 }
-
+// ...existing code...
   /**
    * Cancel an invite (coach only)
    * @param {string} inviteId - The invite ID to cancel

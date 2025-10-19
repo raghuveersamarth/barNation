@@ -22,6 +22,7 @@ export default function AppNavigator() {
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [hasCoach, setHasCoach] = useState(false);
 
   useEffect(() => {
     // Get initial session
@@ -35,18 +36,32 @@ export default function AppNavigator() {
       if (session?.user) ensureUserInDB(session.user);
       else setLoading(false);
     });
-
+    console.log(user)
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) ensureUserInDB(session.user);
       else setUserRole(null);
     });
-
+    const checkCoach = async (userId) => {
+      try {
+        const { data, error } = await supabase
+          .from("coach_clients")
+          .select("id")
+          .eq("client_id", userId)
+          .single();
+        if (error && error.code !== "PGRST116") throw error; // Ignore "No rows found" error
+        setHasCoach(!!data);
+      } catch (err) {
+        console.error("Error checking coach connection:", err);
+      }
+    };
+    if (user?.id) checkCoach(user.id);
     // Refresh user profile when app comes to foreground
     const appStateSubscription = AppState.addEventListener("change", (nextAppState) => {
       if (nextAppState === "active" && user) ensureUserInDB(user);
     });
+
 
     return () => {
       subscription.unsubscribe();
@@ -114,13 +129,16 @@ export default function AppNavigator() {
         {user && userRole?.profile_complete && userRole.role === "client" && (
           <>
             {/* Always show CoachConnection modal first for clients */}
-            <Stack.Screen
+            {
+              !hasCoach?
+              <Stack.Screen
               name="CoachConnection"
               component={CoachConnectionScreen}
               options={{ presentation: "modal" }}
-            />
-            {/* After connecting to coach, show ClientApp */}
+              />:
             <Stack.Screen name="ClientApp" component={ClientNavigator} />
+            }
+            {/* After connecting to coach, show ClientApp */}
           </>
         )}
 
