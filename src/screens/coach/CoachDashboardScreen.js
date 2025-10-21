@@ -101,7 +101,7 @@ export default function CoachDashboardScreen({ navigation }) {
         </Text>
         <TouchableOpacity
           style={styles.assignButton}
-          onPress={() => navigation.navigate('CreateWorkout')}
+          onPress={() => navigation.navigate('ChooseWorkoutType')}
         >
           <Text style={styles.assignButtonText}>Assign Workouts</Text>
         </TouchableOpacity>

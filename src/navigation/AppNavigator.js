@@ -15,6 +15,9 @@ import SubscriptionScreen from "../screens/shared/SubscriptionScreen";
 import CoachConnectionScreen from "../screens/auth/CoachConnectionScreen";
 import AddClientScreen from "../screens/coach/AddClientScreen";
 import VideoUploadScreen from "../screens/client/VideoUploadScreen";
+import CreateWorkoutScreen from "../screens/coach/CreateWorkoutScreen";
+import ChooseWorkoutTypeScreen from "../screens/coach/ChooseWorkoutTypeScreen";
+import WorkoutDetailScreen from "../screens/client/WorkoutDetailScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -36,9 +39,11 @@ export default function AppNavigator() {
       if (session?.user) ensureUserInDB(session.user);
       else setLoading(false);
     });
-    console.log(user)
+    // console.log(user);
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) ensureUserInDB(session.user);
       else setUserRole(null);
@@ -58,10 +63,12 @@ export default function AppNavigator() {
     };
     if (user?.id) checkCoach(user.id);
     // Refresh user profile when app comes to foreground
-    const appStateSubscription = AppState.addEventListener("change", (nextAppState) => {
-      if (nextAppState === "active" && user) ensureUserInDB(user);
-    });
-
+    const appStateSubscription = AppState.addEventListener(
+      "change",
+      (nextAppState) => {
+        if (nextAppState === "active" && user) ensureUserInDB(user);
+      }
+    );
 
     return () => {
       subscription.unsubscribe();
@@ -74,7 +81,9 @@ export default function AppNavigator() {
     try {
       const { data, error } = await supabase
         .from("users")
-        .select("id, role, profile_complete, subscription_tier, subscription_status")
+        .select(
+          "id, role, profile_complete, subscription_tier, subscription_status"
+        )
         .eq("id", authUser.id)
         .maybeSingle();
 
@@ -118,26 +127,31 @@ export default function AppNavigator() {
         )}
 
         {/* Main apps */}
-        {user && userRole?.profile_complete && userRole.role === "coach" && (
-          userRole.subscription_tier && userRole.subscription_status === "active" ? (
+        {user &&
+          userRole?.profile_complete &&
+          userRole.role === "coach" &&
+          (userRole.subscription_tier &&
+          userRole.subscription_status === "active" ? (
             <Stack.Screen name="CoachApp" component={CoachNavigator} />
           ) : (
-            <Stack.Screen name="CoachSubscription" component={SubscriptionScreen} />
-          )
-        )}
+            <Stack.Screen
+              name="CoachSubscription"
+              component={SubscriptionScreen}
+            />
+          ))}
 
         {user && userRole?.profile_complete && userRole.role === "client" && (
           <>
             {/* Always show CoachConnection modal first for clients */}
-            {
-              !hasCoach?
+            {!hasCoach ? (
               <Stack.Screen
-              name="CoachConnection"
-              component={CoachConnectionScreen}
-              options={{ presentation: "modal" }}
-              />:
-            <Stack.Screen name="ClientApp" component={ClientNavigator} />
-            }
+                name="CoachConnection"
+                component={CoachConnectionScreen}
+                options={{ presentation: "modal" }}
+              />
+            ) : (
+              <Stack.Screen name="ClientApp" component={ClientNavigator} />
+            )}
             {/* After connecting to coach, show ClientApp */}
           </>
         )}
@@ -158,6 +172,20 @@ export default function AppNavigator() {
           component={VideoUploadScreen}
           options={{ presentation: "modal" }}
         />
+        <Stack.Screen
+          name="CreateWorkout"
+          component={CreateWorkoutScreen}
+          options={{ presentation: "modal" }}
+        />
+        <Stack.Screen
+          name="ChooseWorkoutType"
+          component={ChooseWorkoutTypeScreen}
+        />
+        <Stack.Screen
+          name="WorkoutDetail"
+          component={WorkoutDetailScreen}
+        />
+        
       </Stack.Navigator>
     </NavigationContainer>
   );
