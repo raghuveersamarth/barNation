@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
+  Image,
 } from "react-native";
 import { supabase } from "../../services/supabase";
 
@@ -16,55 +18,23 @@ export default function LoginScreen({ navigation }) {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const passwordInputRef = useRef();
+  const passwordInputRef = useRef(null);
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
       Alert.alert("Missing Fields", "Please enter both email and password.");
       return;
     }
-
     setIsLoading(true);
     try {
-      // ✅ Use clearer destructuring
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       if (error) throw error;
-
-      // const user = data.user; // cleaner reference
-      // if (user) {
-      //   // Check if user exists in public.users table
-      //   const { data: existing, error: selErr } = await supabase
-      //     .from("users")
-      //     .select("id")
-      //     .eq("id", user.id)
-      //     .maybeSingle();
-      //   if (selErr) throw selErr;
-
-      //   // Insert into users table if not exists
-      //   if (!existing) {
-      //     const md = user.user_metadata ?? {};
-      //     const { error: upsertErr } = await supabase.from("users").upsert(
-      //       {
-      //         id: user.id,
-      //         email: user.email ?? email,
-      //         role: md.role ?? null, // don't force "client" here
-      //         name: md.name ?? null,
-      //         age: md.age ?? null,
-      //         gender: md.gender ?? null,
-      //       },
-      //       { onConflict: "id" }
-      //     );
-      //     if (upsertErr) throw upsertErr;
-      //   }
-      // }
-
-      // AppNavigator handles navigation after login
-      Alert.alert("Welcome Back", "Successfully logged into the BarNation");
-    } catch (err) {
-      Alert.alert("Login Failed", err.message ?? "Unknown error");
+      Alert.alert("Success", "Welcome back to BarNation!");
+    } catch (error) {
+      Alert.alert("Login Failed", error.message ?? String(error));
     } finally {
       setIsLoading(false);
     }
@@ -72,271 +42,263 @@ export default function LoginScreen({ navigation }) {
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
-      Alert.alert("Email Required", "Please enter your email address first");
+      Alert.alert("Email Required", "Please enter your email address first.");
       return;
     }
-
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email);
       if (error) throw error;
-
-      Alert.alert(
-        "Reset Email Sent",
-        "Check your email for password reset instructions"
-      );
+      Alert.alert("Success", "Check your email for reset instructions");
     } catch (error) {
-      Alert.alert("Reset Failed", error.message);
+      Alert.alert("Error", error.message ?? String(error));
     }
   };
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : null}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
+      style={styles.screenContainer}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={styles.header}>
-        <Text style={styles.title}>WELCOME BACK TO THE</Text>
-        <View style={{ flexDirection: "row" }}>
-          <Text style={styles.titleGlow}>BAR</Text>
-          <Text style={styles.titleGlow2}>NATION</Text>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.header}>
+          <View style={styles.iconBadge}>
+            <Image
+              source={require("../../../assets/logo.jpg")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </View>
+          <Text style={styles.appName}>BARNATION</Text>
+          <Text style={styles.tagline}>Strength Beyond Limits</Text>
         </View>
-        <Text style={styles.subtitle}>
-          Log in to your streetlifting account
-        </Text>
-      </View>
 
-      <View style={styles.form}>
-        <TextInput
-          placeholder="Email"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          style={styles.input}
-          value={email}
-          onChangeText={setEmail}
-          placeholderTextColor="#737373"
-          accessibilityLabel="Email input"
-          returnKeyType="next"
-          onSubmitEditing={() => passwordInputRef.current?.focus()}
-          blurOnSubmit={false}
-        />
+        <View style={styles.formContainer}>
+          <Text style={styles.formTitle}>Welcome Back</Text>
 
-        <View style={styles.passwordContainer}>
-          <TextInput
-            ref={passwordInputRef}
-            placeholder="Password"
-            secureTextEntry={!showPassword}
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-            placeholderTextColor="#737373"
-            accessibilityLabel="Password input"
-            returnKeyType="done"
-            onSubmitEditing={handleLogin}
-          />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>EMAIL</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="coach@barnation.com"
+              placeholderTextColor="#6b7280"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              returnKeyType="next"
+              onSubmitEditing={() => passwordInputRef.current?.focus()}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>PASSWORD</Text>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                ref={passwordInputRef}
+                style={styles.passwordInput}
+                placeholder="••••••••"
+                placeholderTextColor="#6b7280"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                returnKeyType="go"
+                onSubmitEditing={handleLogin}
+              />
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPress={() => setShowPassword((s) => !s)}
+                accessibilityLabel="Toggle password visibility"
+              >
+                <Text style={styles.eyeIconText}>
+                  {showPassword ? "👁" : "👁‍🗨"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <TouchableOpacity
-            style={styles.showPasswordButton}
-            onPress={() => setShowPassword((prev) => !prev)}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel={
-              showPassword ? "Hide password" : "Show password"
-            }
+            style={[
+              styles.signInButton,
+              isLoading && styles.signInButtonDisabled,
+            ]}
+            onPress={handleLogin}
+            disabled={isLoading}
           >
-            <Text style={styles.showPasswordText}>
-              {showPassword ? "HIDE" : "SHOW"}
+            <Text style={styles.signInButtonText}>
+              {isLoading ? "SIGNING IN..." : "SIGN IN"}
             </Text>
           </TouchableOpacity>
+
+          <TouchableOpacity onPress={handleForgotPassword}>
+            <Text style={styles.forgotPassword}>Forgot password?</Text>
+          </TouchableOpacity>
+
+          <View style={styles.signupContainer}>
+            <Text style={styles.signupText}>New to BarNation?</Text>
+            <TouchableOpacity onPress={() => navigation.navigate("Signup")}>
+              <Text style={styles.signupLink}>Sign Up</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-
-        <TouchableOpacity
-          onPress={handleForgotPassword}
-          activeOpacity={0.7}
-          style={styles.forgotPassword}
-        >
-          <Text style={styles.forgotPasswordText}>FORGOT PASSWORD?</Text>
-        </TouchableOpacity>
-
-        <CustomButton
-          title={isLoading ? "LOGGING IN..." : "ENTER THE BARNATION"}
-          onPress={handleLogin}
-          disabled={isLoading}
-          variant="primary"
-        />
-
-        <CustomButton
-          title="NEW TO THE BARNATION? SIGN UP"
-          onPress={() => navigation.navigate("Signup")}
-          variant="secondary"
-        />
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-// Reusable Button Component
-function CustomButton({ title, onPress, disabled, variant = "primary" }) {
-  const getButtonStyle = () => {
-    switch (variant) {
-      case "primary":
-        return [
-          styles.button,
-          styles.buttonPrimary,
-          disabled && styles.buttonDisabled,
-        ];
-      case "secondary":
-        return [styles.button, styles.buttonSecondary];
-      default:
-        return [styles.button, styles.buttonPrimary];
-    }
-  };
-
-  const getTextStyle = () => {
-    switch (variant) {
-      case "primary":
-        return [styles.buttonText, styles.buttonTextPrimary];
-      case "secondary":
-        return [styles.buttonText, styles.buttonTextSecondary];
-      default:
-        return [styles.buttonText, styles.buttonTextPrimary];
-    }
-  };
-
-  return (
-    <TouchableOpacity
-      style={getButtonStyle()}
-      onPress={onPress}
-      activeOpacity={0.8}
-      disabled={disabled}
-      accessibilityRole="button"
-    >
-      <Text style={getTextStyle()}>{title}</Text>
-    </TouchableOpacity>
-  );
-}
-
 const styles = StyleSheet.create({
-  container: {
+  screenContainer: {
     flex: 1,
     backgroundColor: "#000000",
-    padding: 20,
-    justifyContent: "center",
+  },
+  container: {
+    flexGrow: 1,
+    paddingVertical: 40,
+    alignItems: "center",
+    backgroundColor: "#000000",
   },
   header: {
     alignItems: "center",
-    marginBottom: 40,
-  },
-  title: {
-    color: "#ffffff",
-    fontSize: 26,
-    fontWeight: "800",
-    letterSpacing: 2,
-    textAlign: "center",
-  },
-  titleGlow: {
-    color: "#ffffffff",
-    fontSize: 30,
-    fontWeight: "800",
-    letterSpacing: 2,
-    textAlign: "center",
-    textShadowColor: "#00ff41",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 20,
-  },
-  titleGlow2: {
-    color: "#00ff41",
-    fontSize: 30,
-    fontWeight: "800",
-    letterSpacing: 2,
-    textAlign: "center",
-    textShadowColor: "#00ff41",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 20,
-  },
-  subtitle: {
-    color: "#d4d4d4",
-    fontSize: 14,
-    marginTop: 8,
-    textAlign: "center",
-    letterSpacing: 1,
-  },
-  form: {
-    width: "100%",
-    maxWidth: 340,
-    alignSelf: "center",
-  },
-  input: {
-    backgroundColor: "#1a1a1a",
-    color: "#ffffff",
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#262626",
-    fontSize: 16,
-  },
-  passwordContainer: {
-    position: "relative",
-    marginBottom: 16,
-  },
-  showPasswordButton: {
-    position: "absolute",
-    right: 16,
-    top: 16,
-    padding: 4,
-    zIndex: 1,
-  },
-  showPasswordText: {
-    color: "#00ff41",
-    fontWeight: "600",
-    fontSize: 12,
-    letterSpacing: 1,
-  },
-  forgotPassword: {
-    alignItems: "flex-end",
     marginBottom: 24,
   },
-  forgotPasswordText: {
-    color: "#00ff41",
-    fontWeight: "600",
-    fontSize: 12,
-    letterSpacing: 1,
-  },
-  button: {
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+  iconBadge: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "#1a1a1a",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
+    borderWidth: 3,
+    borderColor: "#ef4444",
   },
-  buttonPrimary: {
-    backgroundColor: "#00ff41",
-    shadowColor: "#00ff41",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 10,
-    elevation: 15,
+  logo: {
+    width: 120,
+    height: 120,
+    resizeMode: "contain",
+    borderRadius: 50,
   },
-  buttonSecondary: {
-    backgroundColor: "transparent",
-    borderWidth: 2,
-    borderColor: "#00ff41",
+  appName: {
+    fontFamily: "Orbitron-Black", // Orbitron 900
+    fontSize: 48,
+    fontWeight: "900",
+    color: "#ffffff",
+    letterSpacing: 8,
+    marginBottom: 8,
   },
-  buttonDisabled: {
-    backgroundColor: "#404040",
-    shadowOpacity: 0,
-  },
-  buttonText: {
+  tagline: {
+    fontFamily: "Inter-Regular", // Inter 400
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "400",
+    color: "#9ca3af",
     letterSpacing: 1,
   },
-  buttonTextPrimary: {
-    color: "#000000",
+  formContainer: {
+    width: "90%",
+    marginHorizontal: 20,
+    backgroundColor: "rgba(15, 15, 15, 0.95)",
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 2,
+    borderColor: "#ef4444",
   },
-  buttonTextSecondary: {
-    color: "#00ff41",
+  formTitle: {
+    fontFamily: "Orbitron-Bold", // Orbitron 700
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#ffffff",
+    marginBottom: 16,
+    letterSpacing: 2,
+    textAlign: "center",
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontFamily: "Inter-Bold", // Inter 700
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#ef4444",
+    marginBottom: 8,
+    letterSpacing: 1.5,
+  },
+  input: {
+    fontFamily: "Inter-Regular", // Inter 400
+    backgroundColor: "#1f1f1f",
+    borderWidth: 2,
+    borderColor: "#2a2a2a",
+    borderRadius: 8,
+    padding: 14,
+    fontSize: 16,
+    fontWeight: "400",
+    color: "#ffffff",
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1f1f1f",
+    borderWidth: 2,
+    borderColor: "#2a2a2a",
+    borderRadius: 8,
+  },
+  passwordInput: {
+    fontFamily: "Inter-Regular",
+    flex: 1,
+    padding: 14,
+    fontSize: 16,
+    fontWeight: "400",
+    color: "#ffffff",
+  },
+  eyeIcon: {
+    padding: 12,
+  },
+  eyeIconText: {
+    fontSize: 20,
+    color: "#ef4444",
+  },
+  signInButton: {
+    backgroundColor: "#ef4444",
+    borderRadius: 8,
+    padding: 16,
+    alignItems: "center",
+    marginTop: 12,
+  },
+  signInButtonDisabled: {
+    backgroundColor: "#404040",
+  },
+  signInButtonText: {
+    fontFamily: "Orbitron-Bold", // Orbitron 700
+    color: "#000000",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 2,
+  },
+  forgotPassword: {
+    fontFamily: "Inter-Medium", // Inter 500
+    color: "#ef4444",
+    fontSize: 14,
+    fontWeight: "500",
+    textAlign: "center",
+    marginTop: 12,
+  },
+  signupContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 16,
+  },
+  signupText: {
+    fontFamily: "Inter-Regular",
+    color: "#9ca3af",
+    fontSize: 14,
+    fontWeight: "400",
+    marginRight: 6,
+  },
+  signupLink: {
+    fontFamily: "Inter-Bold",
+    color: "#ef4444",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });
