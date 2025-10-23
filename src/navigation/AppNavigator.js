@@ -18,6 +18,7 @@ import VideoUploadScreen from "../screens/client/VideoUploadScreen";
 import CreateWorkoutScreen from "../screens/coach/CreateWorkoutScreen";
 import ChooseWorkoutTypeScreen from "../screens/coach/ChooseWorkoutTypeScreen";
 import WorkoutDetailScreen from "../screens/client/WorkoutDetailScreen";
+import LogExerciseScreen from "../screens/client/LogExerciseScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -185,6 +186,11 @@ export default function AppNavigator() {
           name="WorkoutDetail"
           component={WorkoutDetailScreen}
         />
+        <Stack.Screen
+          name="LogExerciseScreen"
+          component={LogExerciseScreen}
+        />
+
         
       </Stack.Navigator>
     </NavigationContainer>

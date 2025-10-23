@@ -10,6 +10,7 @@ import {
   Alert,
   Modal,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { supabase } from '../../services/supabase';
 import InviteService from '../../services/inviteService';
@@ -21,17 +22,15 @@ export default function CreateWorkoutScreen({ navigation, route }) {
   const [selectedClients, setSelectedClients] = useState([]);
   const [showClientModal, setShowClientModal] = useState(false);
 
-  // Workout details
   const [workoutName, setWorkoutName] = useState('');
   const [workoutDescription, setWorkoutDescription] = useState('');
   const [exercises, setExercises] = useState([]);
 
-  // Exercise being added or edited
   const [showExerciseModal, setShowExerciseModal] = useState(false);
   const [currentExercise, setCurrentExercise] = useState({
     id: null,
     name: '',
-    sets: [{ reps: '', weight: '' }],
+    sets: [{ reps: '', weight: '', isBodyweight: false }],
     rest: '',
     notes: '',
   });
@@ -40,10 +39,10 @@ export default function CreateWorkoutScreen({ navigation, route }) {
   const [isSaving, setIsSaving] = useState(false);
 
   const typeColors = {
-    push: '#FF8C00',    // Orange
-    pull: '#1E90FF',    // Blue
-    legs: '#FFD700',    // Yellow
-    other: '#00ff41',   // Green
+    push: '#FF8C00',
+    pull: '#1E90FF',
+    legs: '#FFD700',
+    other: '#00ff41',
   };
 
   const workoutTypeKey = workoutType.toLowerCase();
@@ -86,20 +85,53 @@ export default function CreateWorkoutScreen({ navigation, route }) {
     }
   };
 
+  const canSaveExercise = () => {
+    if (!currentExercise.name.trim()) return false;
+    
+    const hasValidSet = currentExercise.sets.some(set => {
+      const hasReps = set.reps.trim() !== '';
+      const hasWeight = set.isBodyweight || set.weight.trim() !== '';
+      return hasReps && hasWeight;
+    });
+    
+    return hasValidSet;
+  };
+
   const saveCurrentExercise = () => {
     if (!currentExercise.name.trim()) {
       Alert.alert('Missing Info', 'Please enter an exercise name');
       return;
     }
+    
+    const validSets = currentExercise.sets.filter(set => {
+      const hasReps = set.reps.trim() !== '';
+      const hasWeight = set.isBodyweight || set.weight.trim() !== '';
+      return hasReps && hasWeight;
+    });
+    
+    if (validSets.length === 0) {
+      Alert.alert('Missing Sets', 'Please add at least one complete set (reps and weight)');
+      return;
+    }
+
+    const exerciseToSave = {
+      ...currentExercise,
+      sets: validSets.map(set => ({
+        reps: set.reps,
+        weight: set.isBodyweight ? 'BW' : set.weight,
+        isBodyweight: set.isBodyweight,
+      })),
+    };
+
     if (currentExercise.id) {
-      setExercises(exercises.map((ex) => (ex.id === currentExercise.id ? currentExercise : ex)));
+      setExercises(exercises.map((ex) => (ex.id === currentExercise.id ? exerciseToSave : ex)));
     } else {
       setExercises([
         ...exercises,
-        { ...currentExercise, id: Date.now().toString(), order: exercises.length + 1 },
+        { ...exerciseToSave, id: Date.now().toString(), order: exercises.length + 1 },
       ]);
     }
-    setCurrentExercise({ id: null, name: '', sets: [{ reps: '', weight: '' }], rest: '', notes: '' });
+    setCurrentExercise({ id: null, name: '', sets: [{ reps: '', weight: '', isBodyweight: false }], rest: '', notes: '' });
     setShowExerciseModal(false);
   };
 
@@ -117,7 +149,7 @@ export default function CreateWorkoutScreen({ navigation, route }) {
   const addSetToCurrentExercise = () => {
     setCurrentExercise({
       ...currentExercise,
-      sets: [...currentExercise.sets, { reps: '', weight: '' }],
+      sets: [...currentExercise.sets, { reps: '', weight: '', isBodyweight: false }],
     });
   };
 
@@ -134,7 +166,23 @@ export default function CreateWorkoutScreen({ navigation, route }) {
 
   const updateSetInCurrentExercise = (index, field, value) => {
     const newSets = [...currentExercise.sets];
-    newSets[index][field] = value;
+    
+    if (field === 'reps' || field === 'weight') {
+      const numericValue = value.replace(/[^0-9]/g, '');
+      newSets[index][field] = numericValue;
+    } else {
+      newSets[index][field] = value;
+    }
+    
+    setCurrentExercise({ ...currentExercise, sets: newSets });
+  };
+
+  const toggleBodyweight = (index) => {
+    const newSets = [...currentExercise.sets];
+    newSets[index].isBodyweight = !newSets[index].isBodyweight;
+    if (newSets[index].isBodyweight) {
+      newSets[index].weight = '';
+    }
     setCurrentExercise({ ...currentExercise, sets: newSets });
   };
 
@@ -169,7 +217,7 @@ export default function CreateWorkoutScreen({ navigation, route }) {
             coach_id: coachId,
             name: workoutName,
             description: workoutDescription,
-            status: 'active',
+            status: 'not_started',
             type: workoutTypeKey,
             date: today,
           })
@@ -180,7 +228,10 @@ export default function CreateWorkoutScreen({ navigation, route }) {
         const exercisesData = exercises.map((ex, idx) => ({
           workout_id: workout.id,
           name: ex.name,
-          sets: ex.sets,
+          sets: ex.sets.map(set => ({
+            reps: set.reps,
+            weight: set.isBodyweight ? 'BW' : set.weight,
+          })),
           rest_seconds: ex.rest ? parseInt(ex.rest) : null,
           notes: ex.notes,
           order_index: idx + 1,
@@ -207,7 +258,7 @@ export default function CreateWorkoutScreen({ navigation, route }) {
       </View>
       <View style={styles.setDetails}>
         {set.reps ? <Text style={styles.setDetailText}>{set.reps} reps</Text> : null}
-        {set.weight ? <Text style={styles.setDetailText}>{set.weight}</Text> : null}
+        <Text style={styles.setDetailText}>{set.isBodyweight ? 'BW' : (set.weight ? `${set.weight}kg` : '')}</Text>
       </View>
     </View>
   );
@@ -215,14 +266,14 @@ export default function CreateWorkoutScreen({ navigation, route }) {
   const renderExercise = ({ item, index }) => (
     <TouchableOpacity style={styles.exerciseCard} onPress={() => openExerciseModalForEdit(item)}>
       <View style={styles.exerciseHeader}>
-        <Text style={styles.exerciseNumber}>{index + 1}</Text>
+        <Text style={[styles.exerciseNumber, { backgroundColor: themeColor }]}>{index + 1}</Text>
         <Text style={styles.exerciseName}>{item.name}</Text>
         <TouchableOpacity onPress={() => removeExercise(item.id)}>
           <Text style={styles.removeButton}>✕</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.setsContainer}>
-        <Text style={styles.setsLabel}>Sets ({item.sets.length})</Text>
+        <Text style={[styles.setsLabel, { color: themeColor }]}>Sets ({item.sets.length})</Text>
         {item.sets.map(renderSet)}
       </View>
       {item.rest ? <Text style={styles.restText}>⏱️ Rest: {item.rest}s</Text> : null}
@@ -239,14 +290,32 @@ export default function CreateWorkoutScreen({ navigation, route }) {
         placeholderTextColor="#737373"
         value={item.reps}
         onChangeText={(text) => updateSetInCurrentExercise(index, 'reps', text)}
+        keyboardType="numeric"
       />
-      <TextInput
-        style={styles.setInput}
-        placeholder="Weight"
-        placeholderTextColor="#737373"
-        value={item.weight}
-        onChangeText={(text) => updateSetInCurrentExercise(index, 'weight', text)}
-      />
+      {!item.isBodyweight ? (
+        <TextInput
+          style={styles.setInput}
+          placeholder="Weight (kg)"
+          placeholderTextColor="#737373"
+          value={item.weight}
+          onChangeText={(text) => updateSetInCurrentExercise(index, 'weight', text)}
+          keyboardType="numeric"
+        />
+      ) : (
+        <View style={[styles.setInput, styles.bwLabel]}>
+          <Text style={[styles.bwText, { color: themeColor }]}>BW</Text>
+        </View>
+      )}
+      <TouchableOpacity 
+        style={[
+          styles.bwToggle, 
+          { borderColor: themeColor },
+          item.isBodyweight && { backgroundColor: themeColor }
+        ]}
+        onPress={() => toggleBodyweight(index)}
+      >
+        <Text style={[styles.bwToggleText, { color: themeColor }, item.isBodyweight && { color: '#000' }]}>BW</Text>
+      </TouchableOpacity>
       {currentExercise.sets.length > 1 && (
         <TouchableOpacity onPress={() => removeSetFromCurrentExercise(index)} style={styles.removeSetButton}>
           <Text style={styles.removeSetButtonText}>✕</Text>
@@ -258,7 +327,7 @@ export default function CreateWorkoutScreen({ navigation, route }) {
   const renderClient = ({ item }) => {
     const isSelected = selectedClients.includes(item.client.id);
     return (
-      <TouchableOpacity style={[styles.clientItem, isSelected && { backgroundColor: '#00ff41' }]} onPress={() => toggleClientSelection(item.client.id)}>
+      <TouchableOpacity style={[styles.clientItem, isSelected && { backgroundColor: themeColor }]} onPress={() => toggleClientSelection(item.client.id)}>
         <Text style={[styles.clientName, isSelected && { color: '#000' }]}>{item.client.name}</Text>
         <Text style={[styles.clientEmail, isSelected && { color: '#000' }]}>{item.client.email}</Text>
       </TouchableOpacity>
@@ -267,7 +336,6 @@ export default function CreateWorkoutScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={[styles.header, { borderBottomColor: themeColor }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={[styles.backButton, { color: themeColor }]}>← Back</Text>
@@ -276,60 +344,70 @@ export default function CreateWorkoutScreen({ navigation, route }) {
         <View style={{ width: 60 }} />
       </View>
 
-      {/* Content */}
-      <FlatList
-        data={exercises}
-        ListHeaderComponent={
-          <>
-            {/* Client selection */}
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: themeColor }]}>SELECT CLIENT(S)</Text>
-              <TouchableOpacity style={[styles.clientSelector, { borderColor: themeColor }]} onPress={() => setShowClientModal(true)}>
-                <Text style={styles.selectorText}>
-                  {selectedClients.length === 0
-                    ? 'Select Clients'
-                    : `${selectedClients.length} Client${selectedClients.length > 1 ? 's' : ''} Selected`}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Workout info */}
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: themeColor }]}>WORKOUT NAME</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g., Upper Body Strength"
-                placeholderTextColor="#737373"
-                value={workoutName}
-                onChangeText={setWorkoutName}
-              />
-              <Text style={[styles.sectionTitle, { marginTop: 20, color: themeColor }]}>DESCRIPTION (OPTIONAL)</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="Add notes about this workout..."
-                placeholderTextColor="#737373"
-                value={workoutDescription}
-                onChangeText={setWorkoutDescription}
-                multiline
-                numberOfLines={3}
-              />
-            </View>
-          </>
-        }
-        renderItem={renderExercise}
-        keyExtractor={(item) => item.id}
-        ListFooterComponent={
-          <TouchableOpacity style={[styles.addButton, { backgroundColor: themeColor }]} onPress={() => {
-            setCurrentExercise({ id: null, name: '', sets: [{ reps: '', weight: '' }], rest: '', notes: '' });
-            setShowExerciseModal(true);
-          }}>
-            <Text style={styles.addButtonText}>+ Add Exercise</Text>
+      <ScrollView style={styles.content}>
+        {/* Client selection */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: themeColor }]}>SELECT CLIENT(S)</Text>
+          <TouchableOpacity style={[styles.clientSelector, { borderColor: themeColor }]} onPress={() => setShowClientModal(true)}>
+            <Text style={styles.selectorText}>
+              {selectedClients.length === 0
+                ? 'Select Clients'
+                : `${selectedClients.length} Client${selectedClients.length > 1 ? 's' : ''} Selected`}
+            </Text>
           </TouchableOpacity>
-        }
-        scrollEnabled={true}
-      />
+        </View>
 
-      {/* Save button */}
+        {/* Workout info */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: themeColor }]}>WORKOUT NAME</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g., Upper Body Strength"
+            placeholderTextColor="#737373"
+            value={workoutName}
+            onChangeText={setWorkoutName}
+          />
+          <Text style={[styles.sectionTitle, { marginTop: 20, color: themeColor }]}>DESCRIPTION (OPTIONAL)</Text>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="Add notes about this workout..."
+            placeholderTextColor="#737373"
+            value={workoutDescription}
+            onChangeText={setWorkoutDescription}
+            multiline
+            numberOfLines={3}
+          />
+        </View>
+
+        {/* Exercises Section */}
+        <View style={styles.section}>
+          <View style={styles.exercisesHeader}>
+            <Text style={[styles.sectionTitle, { marginBottom: 0, color: themeColor }]}>EXERCISES</Text>
+            <TouchableOpacity 
+              style={[styles.addExerciseButton, { backgroundColor: themeColor }]} 
+              onPress={() => {
+                setCurrentExercise({ id: null, name: '', sets: [{ reps: '', weight: '', isBodyweight: false }], rest: '', notes: '' });
+                setShowExerciseModal(true);
+              }}
+            >
+              <Text style={styles.addExerciseButtonText}>+ Add Exercise</Text>
+            </TouchableOpacity>
+          </View>
+
+          {exercises.length === 0 ? (
+            <View style={styles.emptyExercises}>
+              <Text style={styles.emptyExercisesText}>No exercises added yet</Text>
+            </View>
+          ) : (
+            exercises.map((item, index) => (
+              <View key={item.id}>
+                {renderExercise({ item, index })}
+              </View>
+            ))
+          )}
+        </View>
+      </ScrollView>
+
       <TouchableOpacity style={[styles.saveButton, { backgroundColor: themeColor }, isSaving && styles.saveButtonDisabled]} onPress={saveWorkout} disabled={isSaving}>
         <Text style={styles.saveButtonText}>{isSaving ? 'Saving...' : 'Send Workout'}</Text>
       </TouchableOpacity>
@@ -366,59 +444,53 @@ export default function CreateWorkoutScreen({ navigation, route }) {
                 <Text style={styles.modalClose}>✕</Text>
               </TouchableOpacity>
             </View>
-            <FlatList
-              data={currentExercise.sets}
-              renderItem={renderSetInput}
-              keyExtractor={(item, index) => index.toString()}
-              scrollEnabled={false}
-              ListHeaderComponent={
-                <>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Exercise Name"
-                    placeholderTextColor="#737373"
-                    value={currentExercise.name}
-                    onChangeText={(text) => setCurrentExercise({ ...currentExercise, name: text })}
-                  />
-                  <View style={styles.setsSectionHeader}>
-                    <Text style={[styles.inputLabel, { color: themeColor }]}>Sets ({currentExercise.sets.length})</Text>
-                    <TouchableOpacity style={styles.addSetButton} onPress={addSetToCurrentExercise}>
-                      <Text style={[styles.addSetButtonText, { color: themeColor }]}>+ Add Set</Text>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              }
-              ListFooterComponent={
-                <>
-                  <Text style={[styles.inputLabel, { color: themeColor }]}>Rest Between Sets (seconds)</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="90"
-                    placeholderTextColor="#737373"
-                    keyboardType="numeric"
-                    value={currentExercise.rest}
-                    onChangeText={(text) => setCurrentExercise({ ...currentExercise, rest: text })}
-                  />
-                  <Text style={[styles.inputLabel, { color: themeColor }]}>Notes (optional)</Text>
-                  <TextInput
-                    style={[styles.input, styles.textArea]}
-                    placeholder="Special instructions, form cues..."
-                    placeholderTextColor="#737373"
-                    value={currentExercise.notes}
-                    onChangeText={(text) => setCurrentExercise({ ...currentExercise, notes: text })}
-                    multiline
-                    numberOfLines={2}
-                  />
-                  <TouchableOpacity
-                    style={[styles.modalButton, !currentExercise.name.trim() && styles.modalButtonDisabled, { backgroundColor: themeColor }]}
-                    onPress={saveCurrentExercise}
-                    disabled={!currentExercise.name.trim()}
-                  >
-                    <Text style={styles.modalButtonText}>{currentExercise.id ? 'Save Changes' : 'Add Exercise'}</Text>
-                  </TouchableOpacity>
-                </>
-              }
-            />
+            <ScrollView>
+              <TextInput
+                style={styles.input}
+                placeholder="Exercise Name"
+                placeholderTextColor="#737373"
+                value={currentExercise.name}
+                onChangeText={(text) => setCurrentExercise({ ...currentExercise, name: text })}
+              />
+              <View style={styles.setsSectionHeader}>
+                <Text style={[styles.inputLabel, { color: themeColor }]}>Sets ({currentExercise.sets.length})</Text>
+                <TouchableOpacity 
+                  style={[styles.addSetButton, { backgroundColor: themeColor }]} 
+                  onPress={addSetToCurrentExercise}
+                >
+                  <Text style={styles.addSetButtonText}>+ Add Set</Text>
+                </TouchableOpacity>
+              </View>
+              
+              {currentExercise.sets.map((item, index) => renderSetInput({ item, index }))}
+
+              <Text style={[styles.inputLabel, { color: themeColor }]}>Rest Between Sets (seconds)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="90"
+                placeholderTextColor="#737373"
+                keyboardType="numeric"
+                value={currentExercise.rest}
+                onChangeText={(text) => setCurrentExercise({ ...currentExercise, rest: text.replace(/[^0-9]/g, '') })}
+              />
+              <Text style={[styles.inputLabel, { color: themeColor }]}>Notes (optional)</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="Special instructions, form cues..."
+                placeholderTextColor="#737373"
+                value={currentExercise.notes}
+                onChangeText={(text) => setCurrentExercise({ ...currentExercise, notes: text })}
+                multiline
+                numberOfLines={2}
+              />
+              <TouchableOpacity
+                style={[styles.modalButton, !canSaveExercise() && styles.modalButtonDisabled, { backgroundColor: themeColor }]}
+                onPress={saveCurrentExercise}
+                disabled={!canSaveExercise()}
+              >
+                <Text style={styles.modalButtonText}>{currentExercise.id ? 'Save Changes' : 'Add Exercise'}</Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -436,31 +508,50 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#262626',
   },
-  backButton: { color: '#00ff41', fontSize: 16, fontWeight: '600' },
-  headerTitle: { color: '#ffffff', fontSize: 20, fontWeight: '700' },
+  backButton: { fontSize: 16, fontWeight: '600' },
+  headerTitle: { fontSize: 20, fontWeight: '700' },
   content: { flex: 1 },
   section: { padding: 20, borderBottomWidth: 1, borderBottomColor: '#262626' },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  sectionTitle: { color: '#00ff41', fontSize: 12, fontWeight: '700', letterSpacing: 1, marginBottom: 12 },
-  clientSelector: { backgroundColor: '#141414', borderWidth: 2, borderColor: '#262626', borderRadius: 8, padding: 16 },
+  sectionTitle: { fontSize: 12, fontWeight: '700', letterSpacing: 1, marginBottom: 12 },
+  exercisesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  addExerciseButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  addExerciseButtonText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  emptyExercises: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  emptyExercisesText: {
+    color: '#737373',
+    fontSize: 14,
+  },
+  clientSelector: { backgroundColor: '#141414', borderWidth: 2, borderRadius: 8, padding: 16 },
   selectorText: { color: '#ccc', fontSize: 14 },
   input: { backgroundColor: '#141414', borderWidth: 2, borderColor: '#262626', borderRadius: 8, padding: 16, color: '#ffffff', fontSize: 16 },
   textArea: { height: 80, textAlignVertical: 'top' },
-  addButton: { backgroundColor: '#00ff41', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 6 },
-  addButtonText: { color: '#000000', fontSize: 14, fontWeight: '700' },
   emptyState: { alignItems: 'center', paddingVertical: 40 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
   emptyText: { color: '#ffffff', fontSize: 16, fontWeight: '600', marginBottom: 4 },
   emptySubtext: { color: '#737373', fontSize: 14 },
   exerciseCard: { backgroundColor: '#141414', borderWidth: 2, borderColor: '#262626', borderRadius: 8, padding: 16, marginBottom: 12 },
   exerciseHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  exerciseNumber: { backgroundColor: '#00ff41', color: '#000000', fontSize: 14, fontWeight: '700', width: 28, height: 28, borderRadius: 14, textAlign: 'center', lineHeight: 28, marginRight: 12 },
+  exerciseNumber: { color: '#000000', fontSize: 14, fontWeight: '700', width: 28, height: 28, borderRadius: 14, textAlign: 'center', lineHeight: 28, marginRight: 12 },
   exerciseName: { flex: 1, color: '#ffffff', fontSize: 16, fontWeight: '600' },
   removeButton: { color: '#ff4444', fontSize: 24, fontWeight: '700', padding: 4 },
   setsContainer: { marginTop: 8 },
-  setsLabel: { color: '#00ff41', fontSize: 12, fontWeight: '600', marginBottom: 8 },
+  setsLabel: { fontSize: 12, fontWeight: '600', marginBottom: 8 },
   setRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   setNumber: { backgroundColor: 'rgba(0, 255, 65, 0.2)', borderWidth: 1, borderColor: '#00ff41', width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
   setNumberText: { color: '#00ff41', fontSize: 12, fontWeight: '700' },
@@ -468,28 +559,48 @@ const styles = StyleSheet.create({
   setDetailText: { color: '#ffffff', fontSize: 12, fontWeight: '600' },
   restText: { color: '#a3a3a3', fontSize: 13, marginTop: 8 },
   exerciseNotes: { color: '#a3a3a3', fontSize: 13, marginTop: 8, fontStyle: 'italic' },
-  saveButton: { backgroundColor: '#00ff41', margin: 20, padding: 18, borderRadius: 8, alignItems: 'center', shadowColor: '#00ff41', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 10 },
+  saveButton: { margin: 20, padding: 18, borderRadius: 8, alignItems: 'center', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 10 },
   saveButtonDisabled: { backgroundColor: '#404040', shadowOpacity: 0 },
   saveButtonText: { color: '#000000', fontSize: 16, fontWeight: '700', letterSpacing: 1 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.9)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: '#141414', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '80%', padding: 20 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { color: '#ffffff', fontSize: 20, fontWeight: '700' },
+  modalTitle: { fontSize: 20, fontWeight: '700' },
   modalClose: { color: '#737373', fontSize: 28, fontWeight: '300' },
   clientItem: { padding: 16, borderBottomWidth: 1, borderBottomColor: '#262626' },
   clientName: { color: '#ffffff', fontSize: 16, fontWeight: '600', marginBottom: 4 },
   clientEmail: { color: '#737373', fontSize: 14 },
-  inputLabel: { color: '#00ff41', fontSize: 12, fontWeight: '600', marginBottom: 8, marginTop: 16 },
-  setsSection: { marginTop: 8 },
+  inputLabel: { fontSize: 12, fontWeight: '600', marginBottom: 8, marginTop: 16 },
   setsSectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  addSetButton: { backgroundColor: 'rgba(0, 255, 65, 0.1)', borderWidth: 1, borderColor: '#00ff41', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
-  addSetButtonText: { color: '#00ff41', fontSize: 12, fontWeight: '700' },
+  addSetButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  addSetButtonText: {
+    color: '#000',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   setInputRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8 },
   setInputNumber: { color: '#ffffff', fontSize: 14, fontWeight: '600', width: 50 },
   setInput: { flex: 1, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 6, padding: 10, color: '#ffffff', fontSize: 14 },
+  bwLabel: { justifyContent: 'center', alignItems: 'center' },
+  bwText: { fontSize: 14, fontWeight: '700' },
+  bwToggle: {
+    backgroundColor: '#262626',
+    borderWidth: 2,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  bwToggleText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
   removeSetButton: { backgroundColor: '#ff4444', width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   removeSetButtonText: { color: '#ffffff', fontSize: 18, fontWeight: '700' },
-  modalButton: { backgroundColor: '#00ff41', padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 24 },
+  modalButton: { padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 24 },
   modalButtonDisabled: { backgroundColor: '#404040' },
   modalButtonText: { color: '#000000', fontSize: 16, fontWeight: '700' },
 });

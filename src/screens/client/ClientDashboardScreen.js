@@ -7,15 +7,13 @@ export default function ClientDashboardScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState(null);
 
-  // Color scheme based on workout type string
   const getWorkoutTypeStyle = (type) => {
     const typeMap = {
-      'push': { color: '#FF8C00', icon: '🏋️', name: 'PUSH' }, // Orange
-      'pull': { color: '#1E90FF', icon: '💪', name: 'PULL' }, // Blue
-      'legs': { color: '#FFD700', icon: '🦵', name: 'LEGS' }, // Yellow/Gold
-      'other': { color: '#00ff41', icon: '🤸', name: 'OTHER' }, // Green
+      'push': { color: '#FF8C00', icon: '🏋️', name: 'PUSH' },
+      'pull': { color: '#1E90FF', icon: '💪', name: 'PULL' },
+      'legs': { color: '#FFD700', icon: '🦵', name: 'LEGS' },
+      'other': { color: '#00ff41', icon: '🤸', name: 'OTHER' },
     };
-    
     const normalizedType = (type || 'other').toLowerCase();
     return typeMap[normalizedType] || typeMap['other'];
   };
@@ -23,6 +21,14 @@ export default function ClientDashboardScreen({ navigation }) {
   useEffect(() => {
     fetchAssignedWorkouts();
   }, []);
+
+  // Refresh when screen comes into focus
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchAssignedWorkouts();
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const fetchAssignedWorkouts = async () => {
     setLoading(true);
@@ -34,15 +40,55 @@ export default function ClientDashboardScreen({ navigation }) {
       }
       setUserId(user.id);
 
-      // Simple fetch - just get workouts with type column
-      let { data, error } = await supabase
+      // Fetch workouts with status
+      let { data: workoutsData, error } = await supabase
         .from('workouts')
         .select('*')
         .eq('client_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setWorkouts(data || []);
+
+      // Check progress for each workout
+      const workoutsWithStatus = await Promise.all(
+        workoutsData.map(async (workout) => {
+          // Count total exercises in workout
+          const { count: totalExercises } = await supabase
+            .from('workout_exercises')
+            .select('*', { count: 'exact', head: true })
+            .eq('workout_id', workout.id);
+
+          // Count submitted exercises
+          const { count: submittedExercises } = await supabase
+            .from('exercise_submissions')
+            .select('*', { count: 'exact', head: true })
+            .eq('assigned_workout_id', workout.id)
+            .eq('client_id', user.id);
+
+          // Calculate progress based on submissions
+          const actualProgress = totalExercises > 0 ? Math.round((submittedExercises / totalExercises) * 100) : 0;
+          
+          // Get status from database
+          const status = workout.status || 'not_started';
+          
+          // Only show 100% if status is 'completed'
+          const displayProgress = status === 'completed' ? 100 : actualProgress;
+          const isCompleted = status === 'completed';
+          const isInProgress = status === 'in_progress' && actualProgress > 0;
+
+          return {
+            ...workout,
+            status,
+            isCompleted,
+            isInProgress,
+            progress: displayProgress,
+            totalExercises,
+            submittedExercises,
+          };
+        })
+      );
+
+      setWorkouts(workoutsWithStatus || []);
     } catch (err) {
       console.error('Error fetching workouts:', err);
       setWorkouts([]);
@@ -58,21 +104,28 @@ export default function ClientDashboardScreen({ navigation }) {
   );
 
   const renderWorkoutCard = ({ item }) => {
-    // Get workout type styling from the type column
     const typeStyle = getWorkoutTypeStyle(item.type);
     const typeColor = typeStyle.color;
     const typeIcon = typeStyle.icon;
     const typeName = typeStyle.name;
 
-    // Calculate progress
-    const progress = item.progress ?? (item.status === 'completed' ? 100 : item.status === 'in_progress' ? 50 : 0);
+    const progress = item.progress || 0;
+    const isCompleted = item.isCompleted;
+    const isInProgress = item.isInProgress;
     
-    const statusText =
-      progress === 100
-        ? 'Completed'
-        : progress === 0
-          ? 'Not Started'
-          : `In Progress: ${progress}%`;
+    // Status text based on actual status
+    const statusText = isCompleted
+      ? '✓ Completed'
+      : isInProgress
+        ? `In Progress: ${item.submittedExercises} / ${item.totalExercises} exercises`
+        : 'Not Started';
+
+    // Button text
+    const buttonText = isCompleted
+      ? 'View Results'
+      : isInProgress
+        ? 'Continue Workout'
+        : 'Start Workout';
 
     return (
       <TouchableOpacity
@@ -81,7 +134,8 @@ export default function ClientDashboardScreen({ navigation }) {
           { 
             borderColor: typeColor,
             shadowColor: typeColor,
-          }
+          },
+          isCompleted && styles.cardCompleted,
         ]}
         onPress={() => {
           navigation.navigate('WorkoutDetail', {
@@ -91,6 +145,18 @@ export default function ClientDashboardScreen({ navigation }) {
         }}
         activeOpacity={0.8}
       >
+        {/* Status Badges */}
+        {isCompleted && (
+          <View style={[styles.statusBadge, { backgroundColor: typeColor }]}>
+            <Text style={styles.statusBadgeText}>✓ COMPLETED</Text>
+          </View>
+        )}
+        {isInProgress && !isCompleted && (
+          <View style={[styles.statusBadge, { backgroundColor: '#FFD700' }]}>
+            <Text style={styles.statusBadgeText}>⏸ IN PROGRESS</Text>
+          </View>
+        )}
+
         {/* Type Badge */}
         <View style={[styles.typeBadge, { backgroundColor: typeColor }]}>
           <Text style={styles.typeIcon}>{typeIcon}</Text>
@@ -107,7 +173,7 @@ export default function ClientDashboardScreen({ navigation }) {
         
         {renderProgressBar(progress, typeColor)}
 
-        {/* Description (if exists) */}
+        {/* Description */}
         {item.description && (
           <Text style={styles.cardDescription} numberOfLines={2}>
             {item.description}
@@ -119,9 +185,8 @@ export default function ClientDashboardScreen({ navigation }) {
           style={[
             styles.cardButton,
             { backgroundColor: typeColor },
-            progress === 100 && styles.cardButtonDisabled,
+            isCompleted && styles.cardButtonCompleted,
           ]}
-          disabled={progress === 100}
           onPress={() => {
             navigation.navigate('WorkoutDetail', {
               workoutId: item.id,
@@ -129,13 +194,7 @@ export default function ClientDashboardScreen({ navigation }) {
             });
           }}
         >
-          <Text style={styles.cardButtonText}>
-            {progress === 0
-              ? 'Start'
-              : progress === 100
-                ? 'View Results'
-                : 'Continue Workout'}
-          </Text>
+          <Text style={styles.cardButtonText}>{buttonText}</Text>
         </TouchableOpacity>
       </TouchableOpacity>
     );
@@ -152,13 +211,11 @@ export default function ClientDashboardScreen({ navigation }) {
 
   return (
     <View style={styles.dashboardContainer}>
-      {/* Header */}
       <View style={styles.dashboardHeader}>
         <Text style={styles.dashboardTitle}>CRAZY.</Text>
         <Text style={styles.dashboardSubtitle}>Your Assigned Workouts</Text>
       </View>
 
-      {/* Workout List */}
       <FlatList
         data={workouts}
         renderItem={renderWorkoutCard}
@@ -188,6 +245,17 @@ const styles = StyleSheet.create({
   dashboardSubtitle: { color: '#666', fontSize: 15, fontWeight: '600', letterSpacing: 0.5 },
   listContainer: { paddingHorizontal: 16, paddingBottom: 24, paddingTop: 8 },
   card: { backgroundColor: '#141414', borderRadius: 20, marginBottom: 20, padding: 20, borderWidth: 2, shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 8 },
+  cardCompleted: { opacity: 0.85 },
+  statusBadge: { 
+    position: 'absolute', 
+    top: 12, 
+    right: 12, 
+    paddingHorizontal: 10, 
+    paddingVertical: 5, 
+    borderRadius: 8,
+    zIndex: 10,
+  },
+  statusBadgeText: { color: '#000', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
   typeBadge: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, marginBottom: 16, gap: 6 },
   typeIcon: { fontSize: 16 },
   typeName: { color: '#000', fontSize: 12, fontWeight: '800', letterSpacing: 1 },
@@ -198,7 +266,7 @@ const styles = StyleSheet.create({
   progressBar: { height: 8, borderRadius: 8 },
   cardDescription: { color: '#999', fontSize: 14, lineHeight: 20, marginBottom: 16 },
   cardButton: { borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
-  cardButtonDisabled: { backgroundColor: '#404040' },
+  cardButtonCompleted: { opacity: 0.7 },
   cardButtonText: { color: '#000', fontWeight: '800', fontSize: 16, letterSpacing: 0.5 },
   emptyState: { alignItems: 'center', marginTop: 100, paddingHorizontal: 40 },
   emptyIcon: { fontSize: 64, marginBottom: 16 },
