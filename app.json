@@ -4,7 +4,7 @@
     "slug": "barNation",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo.jpg",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -30,6 +30,9 @@
       "enabled": false,
       "checkAutomatically": "ON_ERROR_RECOVERY",
       "fallbackToCacheTimeout": 0
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

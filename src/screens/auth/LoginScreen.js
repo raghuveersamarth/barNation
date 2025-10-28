@@ -11,6 +11,7 @@ import {
   ScrollView,
   Image,
 } from "react-native";
+import AppText from "../../components/common/AppText";
 import { supabase } from "../../services/supabase";
 
 export default function LoginScreen({ navigation }) {
@@ -71,7 +72,13 @@ export default function LoginScreen({ navigation }) {
               resizeMode="contain"
             />
           </View>
-          <Text style={styles.appName}>BARNATION</Text>
+          <AppText
+            style={styles.appName}
+            numberOfLines={1}
+            adjustsFontSizeToFit={true}
+          >
+            BARNATION
+          </AppText>
           <Text style={styles.tagline}>Strength Beyond Limits</Text>
         </View>
 
@@ -180,14 +187,14 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
     borderRadius: 50,
   },
-  appName: {
-    fontFamily: "Orbitron-Black", // Orbitron 900
-    fontSize: 48,
-    fontWeight: "900",
-    color: "#ffffff",
-    letterSpacing: 8,
-    marginBottom: 8,
-  },
+appName: {
+  fontFamily: "Orbitron-Black", // Orbitron 900
+  fontSize: 38,              // Reduced from 48
+  fontWeight: "900",
+  color: "#ffffff",
+  letterSpacing: 4,          // Reduced from 8
+  marginBottom: 8,
+},
   tagline: {
     fontFamily: "Inter-Regular", // Inter 400
     fontSize: 16,
@@ -195,24 +202,26 @@ const styles = StyleSheet.create({
     color: "#9ca3af",
     letterSpacing: 1,
   },
-  formContainer: {
-    width: "90%",
-    marginHorizontal: 20,
-    backgroundColor: "rgba(15, 15, 15, 0.95)",
-    borderRadius: 16,
-    padding: 24,
-    borderWidth: 2,
-    borderColor: "#ef4444",
-  },
-  formTitle: {
-    fontFamily: "Orbitron-Bold", // Orbitron 700
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#ffffff",
-    marginBottom: 16,
-    letterSpacing: 2,
-    textAlign: "center",
-  },
+formContainer: {
+  width: "90%",
+  marginHorizontal: 20,
+  backgroundColor: "rgba(15, 15, 15, 0.95)",
+  borderRadius: 16,
+  padding: 20,              // Reduced from 24
+  borderWidth: 2,
+  borderColor: "#ef4444",
+},
+
+formTitle: {
+  fontFamily: "Orbitron-Bold",
+  fontSize: 24,
+  fontWeight: "700",
+  color: "#ffffff",
+  marginBottom: 12,         // Reduced from 16
+  letterSpacing: 1.5,
+  textAlign: "center",
+},
+
   inputGroup: {
     marginBottom: 16,
   },
