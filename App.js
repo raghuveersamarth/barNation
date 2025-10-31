@@ -1,7 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import "./global.css";
 import AppNavigator from './src/navigation/AppNavigator';
-import { useFonts, Orbitron_400Regular, Orbitron_700Bold } from '@expo-google-fonts/orbitron';
 import useCustomFonts from './expo-font';
 
 export default function App() {
@@ -13,7 +12,7 @@ export default function App() {
 
   return (
     <>
-      <AppNavigator style={{ fontFamily: "Orbitron_700Bold", fontSize: 24 }}/>
+      <AppNavigator/>
       <StatusBar style="light" />
     </>
   );
