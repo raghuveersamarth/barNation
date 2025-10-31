@@ -3,8 +3,12 @@ import { colors } from './colors';
 export const typography = {
   // Font Families
   fontFamily: {
-    primary: 'System', // Will use system default
-    secondary: 'System',
+    primary: 'Orbitron-Regular',
+    primaryMedium: 'Orbitron-Medium',
+    primaryBold: 'Orbitron-Bold',
+    secondary: 'Inter-Regular',
+    secondaryMedium: 'Inter-Medium',
+    secondaryBold: 'Inter-Bold',
     mono: 'Courier New',
   },
   

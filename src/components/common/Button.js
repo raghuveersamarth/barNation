@@ -1,6 +1,7 @@
 // src/components/common/Button.js
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { typography } from '../../theme/typography';
 
 export default function Button({ title, onPress, disabled, variant = 'primary' }) {
   const getButtonStyle = () => {
@@ -73,7 +74,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
   },
   text: {
-    fontWeight: '700',
+    fontFamily: typography.fontFamily.primaryBold,
     fontSize: 16,
     letterSpacing: 1,
   },
